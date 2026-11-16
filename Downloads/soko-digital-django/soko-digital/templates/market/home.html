@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main id="top">
+  <section class="hero container py-5">
+    <div class="row g-5 align-items-center">
+      <div class="col-lg-7">
+        <h1 class="display-4">Farm-fresh produce, paid for when it arrives.</h1>
+        <p class="lead mt-3">Farmers list what they have and set their own price. Restaurants, caterers, schools and vendors order it. We collect, grade and deliver it, and the money is held until the buyer confirms.</p>
+        <a class="btn btn-primary btn-lg me-2" href="#buy">Browse listings</a>
+        <a class="btn btn-outline-dark btn-lg" href="#sell">List your produce</a>
+        <p class="note mt-4">Pilot route: Molo and Nakuru to Nairobi. All data on this page is simulated and no real payments are made.</p>
+      </div>
+      <div class="col-lg-5">
+        <div class="board">
+          <h2 class="h5 mb-3">Reference prices today</h2>
+          <table class="table table-sm mb-2">
+            <thead><tr><th scope="col">Produce</th><th scope="col" class="text-end">KES per kg</th></tr></thead>
+            <tbody id="ref-rows"></tbody>
+          </table>
+          <p class="small mb-0">A guide for farmers and buyers. Farmers set the actual price.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band py-5" id="buy">
+    <div class="container">
+      <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+          <h2>Available now</h2>
+          <p class="mb-0" id="count">Loading listings…</p>
+        </div>
+        <div>
+          <label for="filter" class="form-label">Show</label>
+          <select id="filter" class="form-select"></select>
+        </div>
+      </div>
+      <div class="row g-3" id="listings"></div>
+    </div>
+  </section>
+
+  <section class="container py-5" id="sell">
+    <div class="row g-5">
+      <div class="col-lg-5">
+        <h2>Sell your produce</h2>
+        <p>Set your own price per kilogram. We show the usual range so you can see where you stand. After you list, bring your produce to the collection point so it can be weighed and graded.</p>
+      </div>
+      <div class="col-lg-7">
+        <form id="sell-form" class="row g-3" novalidate>
+          <div class="col-md-6">
+            <label for="s-name" class="form-label">Your name</label>
+            <input id="s-name" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label for="s-location" class="form-label">Where is the produce?</label>
+            <input id="s-location" class="form-control" placeholder="e.g. Molo" required>
+          </div>
+          <div class="col-md-6">
+            <label for="s-produce" class="form-label">Produce</label>
+            <select id="s-produce" class="form-select"></select>
+          </div>
+          <div class="col-md-6">
+            <label for="s-grade" class="form-label">Your grade estimate</label>
+            <select id="s-grade" class="form-select">
+              <option>A</option><option>B</option><option>C</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="s-qty" class="form-label">Quantity (kg)</label>
+            <input id="s-qty" type="number" min="10" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label for="s-price" class="form-label">Your price (KES per kg)</label>
+            <input id="s-price" type="number" min="1" class="form-control" required>
+          </div>
+          <div class="col-12"><div id="price-hint" class="form-text" aria-live="polite"></div></div>
+          <div class="col-12">
+            <button class="btn btn-primary" type="submit">Post listing</button>
+            <span id="sell-msg" class="ms-3 fw-semibold" role="status"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="band py-5" id="how">
+    <div class="container">
+      <h2 class="mb-4">How your money moves</h2>
+      <ol class="row g-3 list-unstyled how">
+        <li class="col-md-3"><strong>The buyer pays</strong><br>By M-Pesa when ordering. The money goes to a holding account, not to us or the farmer.</li>
+        <li class="col-md-3"><strong>We collect and deliver</strong><br>Produce is weighed and graded at the collection point, then delivered.</li>
+        <li class="col-md-3"><strong>The buyer confirms</strong><br>They confirm the order, or report a problem with photos.</li>
+        <li class="col-md-3"><strong>The farmer is paid</strong><br>The farmer gets the price minus our 8% fee. A valid problem report reduces the payout.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="container py-5" id="status">
+    <div class="d-flex justify-content-between align-items-baseline mb-3">
+      <h2>API status</h2>
+      <button type="button" class="btn btn-link" id="ping">Check again</button>
+    </div>
+    <ul class="list-group" id="endpoints"></ul>
+  </section>
+</main>
+{% endblock %}
+
+{% block modals %}
+  {% include "partials/order_modal.html" %}
+{% endblock %}
