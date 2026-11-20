@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}Checkout – Soko Digital{% endblock %}
+{% block content %}
+<main class="container checkout">
+  <ol class="steps" aria-label="Checkout steps"><li class="done">Cart</li><li class="on">Delivery &amp; payment</li><li>Done</li></ol>
+  {% for n in cart.notes %}<div class="alert alert-warning">{{ n }}</div>{% endfor %}
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <form id="checkout-form" class="card-panel" novalidate>
+        <h1 class="h3 mb-1">Delivery &amp; payment</h1>
+        <p class="sub">Tell us where to deliver and which number pays.</p>
+        <div class="mb-3">
+          <label for="co-address" class="form-label">Delivery address in Nairobi</label>
+          <input id="co-address" class="form-control" maxlength="200" placeholder="Estate, street or landmark, e.g. Kilimani, Argwings Kodhek Rd" value="{{ address }}" required>
+        </div>
+        <div class="mb-3">
+          <label for="co-note" class="form-label">Delivery notes <span class="text-muted fw-normal">(optional)</span></label>
+          <textarea id="co-note" class="form-control" rows="2" maxlength="300" placeholder="Gate code, who to call, best time to deliver"></textarea>
+        </div>
+        <div class="mb-4">
+          <label for="co-phone" class="form-label">M-Pesa number</label>
+          <input id="co-phone" class="form-control" inputmode="tel" placeholder="0712345678" value="{{ phone }}" required>
+          <div class="form-text">We'll send the payment prompt to this number.</div>
+        </div>
+        <div class="pay-method"><span>📱</span><div><strong>Pay with M-Pesa</strong><small>You'll get a prompt on your phone. Your money is held until you confirm the delivery.</small></div></div>
+        <div id="co-error" class="text-danger fw-semibold my-2" role="alert"></div>
+        <button type="submit" id="co-pay" class="btn btn-primary btn-lg w-100">Pay KES {{ cart.total|intcomma }} with M-Pesa</button>
+        <p class="small text-muted mt-3 mb-0">Demo: the payment is simulated and no real money moves.</p>
+      </form>
+    </div>
+    <div class="col-lg-5">
+      <aside class="card-panel summary">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">Order summary</h2>
+          <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="offcanvas" data-bs-target="#cart-drawer">Edit cart</button>
+        </div>
+        {% for i in cart.items %}
+        <div class="sum-line">
+          <span class="ci-emo">{{ i.emoji }}</span>
+          <div><strong>{{ i.name }}</strong><small>{{ i.qty }} kg × KES {{ i.price }} · {{ i.farmer }}, {{ i.location }}</small></div>
+          <b>KES {{ i.line|intcomma }}</b>
+        </div>
+        {% endfor %}
+        <div class="row-line"><span>Produce</span><span>KES {{ cart.subtotal|intcomma }}</span></div>
+        <div class="row-line"><span>Delivery ({{ cart.kg }} kg × KES {{ cart.deliveryPerKg }})</span><span>KES {{ cart.delivery|intcomma }}</span></div>
+        <div class="row-line total"><span>Total</span><span>KES {{ cart.total|intcomma }}</span></div>
+        <ul class="trust"><li>🔒 Money held until you confirm delivery</li><li>⚖️ Weighed and graded before it travels</li><li>🚚 One delivery to one address</li></ul>
+      </aside>
+    </div>
+  </div>
+</main>
+<div class="pay-overlay" id="pay-overlay" hidden>
+  <div class="pay-box"><div class="phone"><span>📱</span><i></i></div>
+    <h2 class="h4">Check your phone</h2><p>Enter your M-Pesa PIN to pay <strong>KES {{ cart.total|intcomma }}</strong>.</p>
+    <small>Demo: this is simulated and will complete by itself.</small></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/checkout.js' %}"></script>{% endblock %}

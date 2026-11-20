@@ -1,0 +1,15 @@
+{% extends "dashboard/base_dash.html" %}
+{% block title %}Edit listing – Soko Digital{% endblock %}
+{% block rolelabel %}Farmer account{% endblock %}
+{% block side %}<a href="{% url 'farmer_dashboard' %}">← Back to dashboard</a>{% endblock %}
+{% block dash %}
+<section class="panel" style="max-width:560px">
+  <h1 class="h3 mb-1">Edit {{ listing.produce.name }}</h1>
+  <p class="sub">Change your price or add more kilograms.</p>
+  <form method="post" novalidate>{% csrf_token %}
+    {% include "partials/form_fields.html" %}
+    <button class="btn btn-primary" type="submit">Save changes</button>
+    <a class="btn btn-outline-dark ms-2" href="{% url 'farmer_dashboard' %}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

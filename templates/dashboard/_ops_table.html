@@ -1,0 +1,29 @@
+{% load humanize market_extras %}
+<div class="table-responsive">
+<table class="table align-middle mb-0">
+  <thead><tr><th>Order</th><th>Produce</th><th>Farmer</th><th>Buyer</th><th class="text-end">kg</th><th class="text-end">Amount</th><th>When</th><th></th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td><strong>{{ o.ref }}</strong></td>
+      <td>{{ o.listing.produce.slug|emoji }} {{ o.listing.produce.name }}</td>
+      <td>{{ o.listing.farmer_name }}</td>
+      <td>{{ o.buyer.get_full_name|default:o.buyer.username }}<br><small class="text-muted">{{ o.phone }}</small>{% if o.checkout %}<br><small class="text-muted">📍 {{ o.checkout.address }}</small>{% endif %}</td>
+      <td class="text-end">{{ o.qty_kg }}</td>
+      <td class="text-end">KES {{ o.total|intcomma }}</td>
+      <td>{{ o.updated|naturaltime }}</td>
+      <td class="text-end text-nowrap">
+        <form method="post" action="{% url 'ops_action' o.id %}" class="d-inline">{% csrf_token %}
+          {% if "deliver" in actions %}<button name="action" value="deliver" class="btn btn-sm btn-primary">Mark delivered</button>{% endif %}
+          {% if "release" in actions %}<button name="action" value="release" class="btn btn-sm btn-primary">Pay farmer</button>{% endif %}
+          {% if "refund" in actions %}<button name="action" value="refund" class="btn btn-sm btn-outline-dark" onclick="return confirm('Refund the buyer and return the stock?')">Refund buyer</button>{% endif %}
+          {% if "cancel" in actions %}<button name="action" value="cancel" class="btn btn-sm btn-outline-dark">Cancel</button>{% endif %}
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="empty">Nothing here right now.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

@@ -37,8 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 
     # Local apps
+    'rest_framework',
     'market',
 ]
 
@@ -64,6 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'market.context_processors.cart',
             ],
         },
     },
@@ -127,3 +130,21 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files (User uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# ---------------------------------------------------------------
+# Soko Digital settings
+# ---------------------------------------------------------------
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'
+
+SOKO_FEE_PERCENT = 8          # platform fee taken from the farmer's payout
+SOKO_DELIVERY_PER_KG = 6      # KES per kg, delivery to Nairobi
+
+# DEMO_MODE lets the website itself mark an order "delivered" (normally the
+# delivery team does this from the admin). Set to False for a real launch.
+DEMO_MODE = True
+
+# Using ngrok? Uncomment and use your own host:
+# ALLOWED_HOSTS = ['.ngrok-free.app']
+# CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.app']

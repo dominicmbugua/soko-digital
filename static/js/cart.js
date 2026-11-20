@@ -1,0 +1,139 @@
+/* Site-wide: Soko helpers (request, toast) and the cart drawer. */
+(function () {
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const kes = (n) => "KES " + Math.round(n).toLocaleString("en-KE");
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+
+  async function request(method, url, body) {
+    const opts = { method, credentials: "same-origin", headers: { "Accept": "application/json" } };
+    if (method !== "GET") {
+      opts.headers["Content-Type"] = "application/json";
+      opts.headers["X-CSRFToken"] = csrf();
+      opts.body = JSON.stringify(body || {});
+    }
+    try {
+      const r = await fetch(url, opts);
+      let data = null;
+      try { data = await r.json(); } catch (_) { /* not JSON */ }
+      return r.ok ? { ok: true, status: r.status, data }
+                  : { ok: false, status: r.status, error: (data && data.error) || "Something went wrong. Please try again." };
+    } catch (_) {
+      return { ok: false, status: 0, error: "Could not reach the server. Check your connection." };
+    }
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    if (!t) return;
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 4200);
+  }
+
+  window.Soko = { request, toast, kes, esc };
+
+  const drawer = document.getElementById("cart-drawer");
+  if (!drawer) {   // farmers and staff have no cart
+    window.SokoCart = { add: async () => toast("Only buyer accounts can order. Log in with a buyer account to shop.") };
+    return;
+  }
+
+  const badge = document.getElementById("cart-badge");
+  const list = document.getElementById("cart-items");
+  const foot = document.getElementById("cart-foot");
+  const notes = document.getElementById("cart-notes");
+  let cart = { items: [] };
+
+  function setBadge(n) {
+    badge.textContent = n; badge.hidden = !n;
+    badge.classList.remove("bump"); void badge.offsetWidth; badge.classList.add("bump");
+  }
+
+  function render(c) {
+    cart = c;
+    setBadge(c.count);
+    notes.innerHTML = (c.notes || []).map(n => `<div class="alert alert-warning py-2 small mt-2 mb-0">${esc(n)}</div>`).join("");
+    if (!c.items.length) {
+      list.innerHTML = `<li class="cart-empty"><div class="big">🧺</div><p>Your cart is empty.</p>
+        <button class="btn btn-primary" data-bs-dismiss="offcanvas">Browse produce</button></li>`;
+      foot.hidden = true;
+      return;
+    }
+    list.innerHTML = c.items.map(i => `
+      <li class="ci" data-id="${i.id}" data-max="${i.max}" data-qty="${i.qty}">
+        <span class="ci-emo" aria-hidden="true">${i.emoji}</span>
+        <div class="ci-main">
+          <strong>${esc(i.name)}</strong>
+          <small>${esc(i.farmer)}, ${esc(i.location)} · Grade ${esc(i.grade)}</small>
+          <small>${kes(i.price)} per kg</small>
+          <div class="qty-pick sm">
+            <button type="button" data-act="dec" aria-label="Less">−</button>
+            <input type="number" min="1" max="${i.max}" value="${i.qty}" aria-label="Kilograms">
+            <button type="button" data-act="inc" aria-label="More">+</button><span>kg</span>
+          </div>
+        </div>
+        <div class="ci-side"><b>${kes(i.line)}</b><button type="button" class="ci-del" data-act="del" aria-label="Remove ${esc(i.name)}">✕</button></div>
+      </li>`).join("");
+    document.getElementById("c-sub").textContent = kes(c.subtotal);
+    document.getElementById("c-del").textContent = kes(c.delivery);
+    document.getElementById("c-total").textContent = kes(c.total);
+    foot.hidden = false;
+  }
+
+  async function load() {
+    const r = await request("GET", "/api/cart/");
+    if (r.ok) render(r.data);
+  }
+
+  async function setQty(id, qty) {
+    const r = await request("POST", "/api/cart/set/", { listingId: id, qty });
+    if (!r.ok) { toast(r.error); return; }
+    render(r.data);
+    document.dispatchEvent(new CustomEvent("soko:cart-changed"));
+  }
+
+  list.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    const li = b.closest(".ci"), id = Number(li.dataset.id), qty = Number(li.dataset.qty), max = Number(li.dataset.max);
+    if (b.dataset.act === "del") setQty(id, 0);
+    if (b.dataset.act === "inc") setQty(id, Math.min(max, qty + 5));
+    if (b.dataset.act === "dec") setQty(id, Math.max(1, qty - 5));
+  });
+  list.addEventListener("change", (e) => {
+    if (e.target.tagName !== "INPUT") return;
+    const li = e.target.closest(".ci");
+    setQty(Number(li.dataset.id), Math.max(1, Number(e.target.value) || 1));
+  });
+
+  function fly(fromEl, emoji) {
+    const target = document.getElementById("cart-btn");
+    if (reduce || !fromEl || !target) return;
+    const a = fromEl.getBoundingClientRect(), b = target.getBoundingClientRect();
+    const dx = (b.left + b.width / 2) - (a.left + a.width / 2), dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    const el = document.createElement("span");
+    el.className = "fly"; el.textContent = emoji;
+    el.style.left = (a.left + a.width / 2) + "px"; el.style.top = (a.top + a.height / 2) + "px";
+    document.body.appendChild(el);
+    el.animate([
+      { transform: "translate(-50%,-50%) scale(1) rotate(0)", opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx * 0.5}px), calc(-50% + ${dy * 0.5 - 90}px)) scale(1.5) rotate(120deg)`, opacity: 1, offset: 0.45 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.3) rotate(300deg)`, opacity: .3 }
+    ], { duration: 800, easing: "ease-in-out" }).onfinish = () => el.remove();
+  }
+
+  async function add(listingId, qty, fromEl, emoji, name) {
+    const r = await request("POST", "/api/cart/add/", { listingId, qty });
+    if (!r.ok) { toast(r.error); return false; }
+    fly(fromEl, emoji);
+    setTimeout(() => render(r.data), reduce ? 0 : 650);
+    toast(r.data.notes && r.data.notes.length ? r.data.notes[r.data.notes.length - 1]
+                                               : `Added ${r.data.added} kg of ${name} to your cart.`);
+    document.dispatchEvent(new CustomEvent("soko:cart-changed"));
+    return true;
+  }
+
+  window.SokoCart = { add };
+  drawer.addEventListener("show.bs.offcanvas", load);
+})();

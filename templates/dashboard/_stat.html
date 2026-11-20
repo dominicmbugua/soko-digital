@@ -1,0 +1,5 @@
+{% load humanize %}
+<div class="stat-card">
+  <div class="stat-ico">{{ icon }}</div>
+  <div class="stat-body"><span class="stat-label">{{ label }}</span><b data-count="{{ value }}" data-prefix="{{ prefix }}">{{ prefix }}{{ value|intcomma }}</b>{% if hint %}<small>{{ hint }}</small>{% endif %}</div>
+</div>
