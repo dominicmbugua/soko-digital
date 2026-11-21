@@ -3,50 +3,73 @@
 
 // ---------- Data handed over by Django ({{ boot|json_script }}) ----------
 const boot = JSON.parse(document.getElementById("boot-data").textContent);
-const PRODUCE = boot.produce;                    // [{id, name, emoji, ref:[min,max]}]
+const PRODUCE = boot.produce;                    // [{id, name, photo, ref:[min,max]}]
 const produceById = (id) => PRODUCE.find(p => p.id === id);
 
 // ---------- Helpers ----------
 const $ = (id) => document.getElementById(id);
 const esc = Soko.esc;
+const art = (slug, cls = "") => {
+  const p = produceById(slug);
+  return p && p.photo
+    ? `<img class="pa photo ${cls}" src="${esc(p.photo)}" alt="" loading="lazy" decoding="async">`
+    : `<svg class="pa ${cls}" aria-hidden="true" focusable="false"><use href="#p-${esc(slug)}"/></svg>`;
+};
+const icon = (name) => `<svg class="i" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
+const initials = (name) => String(name).split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 
 // ---------- Listings ----------
 let listingsCache = [];
+let currentFilter = "all";
+
+function setFilter(slug, { scroll = false } = {}) {
+  currentFilter = slug === "all" || produceById(slug) ? slug : "all";
+  document.querySelectorAll("#chips .chip-btn").forEach(b => {
+    const on = b.dataset.filter === currentFilter;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on);
+  });
+  renderListings();
+  if (scroll) $("buy").scrollIntoView({ behavior: "smooth" });
+}
 
 async function renderListings(newId) {
   const res = await Soko.request("GET", "/api/listings/");
   if (!res.ok) { Soko.toast(res.error); return; }
   listingsCache = res.data;
-  const filter = $("filter").value;
-  const items = listingsCache.filter(l => filter === "all" || l.produce === filter);
+  const items = listingsCache.filter(l => currentFilter === "all" || l.produce === currentFilter);
   $("count").textContent = items.length + (items.length === 1 ? " listing" : " listings") + " from farmers on the Molo, Nakuru and Nairobi route";
   $("listings").innerHTML = items.length ? items.map((l, idx) => {
     const p = produceById(l.produce);
     const soldOut = l.qty < 1;
     const start = Math.min(10, l.qty);
-    return `<div class="col-md-6 col-lg-4">
-      <div class="card listing h-100 ${l.id === newId ? "is-new" : ""}" data-p="${esc(l.produce)}" data-id="${l.id}" style="--i:${idx}">
-        <div class="listing-top">
-          <span class="listing-emoji" aria-hidden="true">${p.emoji}</span>
-          <span class="badge badge-grade" title="Grade as stated by the farmer">Grade ${esc(l.grade)}</span>
+    return `<div class="col-md-6 col-lg-4 col-xxl-3 wow fadeInUp" data-wow-delay="${((idx % 3) * 0.15 + 0.05).toFixed(2)}s">
+      <article class="listing h-100 ${l.id === newId ? "is-new" : ""}" data-p="${esc(l.produce)}" data-id="${l.id}">
+        <div class="listing-top ${p.photo ? "has-photo" : ""}">
+          ${art(l.produce, "lg")}
+          <span class="grade" title="Grade as stated by the farmer">Grade ${esc(l.grade)}</span>
         </div>
-        <div class="card-body d-flex flex-column">
-          <h3 class="card-title h5">${esc(p.name)}</h3>
-          <p class="price mb-0">KES ${l.price}<span class="fs-6 fw-normal"> per kg</span></p>
-          <p class="ref mb-2">Usual range ${p.ref[0]}–${p.ref[1]}</p>
-          <p class="mb-3">${esc(l.farmer)}, ${esc(l.location)}<br>${l.qty.toLocaleString("en-KE")} kg available</p>
-          ${soldOut ? `<button class="btn btn-primary mt-auto" disabled>Sold out</button>` : `
-          <div class="mt-auto">
-            <div class="qty-pick mb-2">
-              <button type="button" class="qbtn" data-d="-5" aria-label="Less">−</button>
-              <input type="number" class="qin" min="1" max="${l.qty}" value="${start}" aria-label="Kilograms to order">
-              <button type="button" class="qbtn" data-d="5" aria-label="More">+</button><span>kg</span>
+        <div class="listing-body">
+          <h3>${esc(p.name)}</h3>
+          <p class="price">KES ${l.price}<small> per kg</small></p>
+          <p class="ref">Usual range ${p.ref[0]}–${p.ref[1]}</p>
+          <div class="seller">
+            <span class="av" aria-hidden="true">${esc(initials(l.farmer))}</span>
+            <div><b>${esc(l.farmer)}</b><span>${icon("map-pin")}${esc(l.location)} · ${l.qty.toLocaleString("en-KE")} kg available</span></div>
+          </div>
+          ${soldOut ? `<button class="btn btn-primary w-100 mt-auto" disabled>Sold out</button>` : `
+          <div class="buy-row">
+            <div class="qty-pick">
+              <button type="button" class="qbtn" data-d="-5" aria-label="Less">${icon("minus")}</button>
+              <input type="number" inputmode="numeric" class="qin" min="1" max="${l.qty}" value="${start}" aria-label="Kilograms to order">
+              <button type="button" class="qbtn" data-d="5" aria-label="More">${icon("plus")}</button><span>kg</span>
             </div>
-            <button class="btn btn-primary w-100 add-btn">Add to cart</button>
+            <button class="btn btn-primary add-btn">Add to cart</button>
           </div>`}
         </div>
-      </div></div>`;
-  }).join("") : `<p>No listings for this produce yet. Farmers can add one below.</p>`;
+      </article></div>`;
+  }).join("") : `<p class="empty-note">No listings for this produce yet. Farmers can add one in the section below.</p>`;
+  if (window.Wow) Wow.refresh();
 }
 
 // ---------- Sell form (only on the page for logged-in farmers) ----------
@@ -86,53 +109,41 @@ async function submitListing(e) {
   e.target.reset();
   $("s-location").value = body.location;
   updateHint();
-  $("filter").value = "all";
+  currentFilter = "all";
+  document.querySelectorAll("#chips .chip-btn").forEach(b => {
+    const on = b.dataset.filter === "all"; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on);
+  });
   await renderListings(res.data.id);
   $("buy").scrollIntoView({ behavior: "smooth" });
 }
 
-// ---------- Motion: scroll reveal, count-up, navbar, parallax ----------
-function initMotion() {
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// ---------- Navbar: a hairline appears once the page has scrolled ----------
+function initNav() {
   const nav = document.querySelector(".site-nav");
-  const onScroll = () => {
-    if (nav) nav.classList.toggle("scrolled", window.scrollY > 10);
-    if (!reduce) document.documentElement.style.setProperty("--sy", window.scrollY);
-  };
-  window.addEventListener("scroll", () => requestAnimationFrame(onScroll), { passive: true });
+  if (!nav) return;
+  const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 8);
+  window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
-
-  const countUp = (el) => {
-    const target = Number(el.dataset.count) || 0;
-    if (reduce) { el.textContent = target; return; }
-    const t0 = performance.now(), dur = 1200;
-    const tick = (t) => {
-      const k = Math.min(1, (t - t0) / dur);
-      el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
-      if (k < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  };
-
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (!e.isIntersecting) return;
-      e.target.classList.add("in");
-      e.target.querySelectorAll("[data-count]").forEach(countUp);
-      io.unobserve(e.target);
-    });
-  }, { threshold: 0.12 });
-  document.querySelectorAll(".reveal").forEach(el => io.observe(el));
 }
 
 // ---------- Init ----------
 function init() {
-  initMotion();
+  initNav();
   const wanted = new URLSearchParams(location.search).get("produce");
-  if (wanted && produceById(wanted)) $("filter").value = wanted;
-  renderListings();
+  if (wanted && produceById(wanted)) setFilter(wanted); else renderListings();
 
-  $("filter").addEventListener("change", () => renderListings());
+  $("chips").addEventListener("click", (e) => {
+    const b = e.target.closest(".chip-btn");
+    if (b) setFilter(b.dataset.filter);
+  });
+  // Tapping produce in the hero shows its listings without reloading the page
+  $("stall").addEventListener("click", (e) => {
+    const t = e.target.closest(".stall-tile");
+    if (!t) return;
+    e.preventDefault();
+    setFilter(t.dataset.produce, { scroll: true });
+  });
+
   if ($("sell-form")) {
     updateHint();
     $("s-produce").addEventListener("change", updateHint);
@@ -157,7 +168,7 @@ function init() {
       const qty = Math.min(l.qty, Math.max(1, Number(input.value) || 1));
       input.value = qty;
       add.disabled = true;
-      await SokoCart.add(l.id, qty, card.querySelector(".listing-emoji"), produceById(l.produce).emoji, produceById(l.produce).name);
+      await SokoCart.add(l.id, qty, card.querySelector(".listing-top .pa"), l.produce, produceById(l.produce).name);
       add.disabled = false;
     }
   });

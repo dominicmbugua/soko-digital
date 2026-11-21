@@ -6,9 +6,9 @@
   {% for o in orders %}
     <tr>
       <td><strong>{{ o.ref }}</strong></td>
-      <td>{{ o.listing.produce.slug|emoji }} {{ o.listing.produce.name }}</td>
+      <td><div class="cell-art" data-p="{{ o.listing.produce.slug }}">{% produce_art o.listing.produce.slug "sm" %}{{ o.listing.produce.name }}</div></td>
       <td>{{ o.listing.farmer_name }}</td>
-      <td>{{ o.buyer.get_full_name|default:o.buyer.username }}<br><small class="text-muted">{{ o.phone }}</small>{% if o.checkout %}<br><small class="text-muted">📍 {{ o.checkout.address }}</small>{% endif %}</td>
+      <td>{{ o.buyer.get_full_name|default:o.buyer.username }}<br><small class="text-muted">{{ o.phone }}</small>{% if o.checkout %}<br><small class="text-muted">{% icon "map-pin" %} {{ o.checkout.address }}</small>{% endif %}</td>
       <td class="text-end">{{ o.qty_kg }}</td>
       <td class="text-end">KES {{ o.total|intcomma }}</td>
       <td>{{ o.updated|naturaltime }}</td>

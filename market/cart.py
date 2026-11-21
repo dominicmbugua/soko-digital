@@ -2,7 +2,7 @@
 from django.conf import settings
 
 from .models import Listing
-from .utils import emoji_for
+from .utils import emoji_for, photo_url
 
 KEY = "cart"
 
@@ -47,7 +47,7 @@ class Cart:
                 notes.append(f"Only {qty} kg of {l.produce.name} is left, so we adjusted your quantity.")
                 changed = True
             out.append({
-                "id": l.id, "produce": l.produce.slug, "name": l.produce.name, "emoji": emoji_for(l.produce.slug),
+                "id": l.id, "produce": l.produce.slug, "name": l.produce.name, "emoji": emoji_for(l.produce.slug), "photo": photo_url(l.produce.slug),
                 "farmer": l.farmer_name, "location": l.location, "grade": l.grade, "price": l.price_per_kg,
                 "qty": qty, "max": l.qty_kg, "line": l.price_per_kg * qty, "delivery": settings.SOKO_DELIVERY_PER_KG * qty,
             })

@@ -4,6 +4,10 @@
   const kes = (n) => "KES " + Math.round(n).toLocaleString("en-KE");
   const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+  const art = (slug, cls = "", photo = "") => photo
+    ? `<img class="pa photo ${cls}" src="${esc(photo)}" alt="">`
+    : `<svg class="pa ${cls}" aria-hidden="true" focusable="false"><use href="#p-${esc(slug)}"/></svg>`;
+  const ico = (name) => `<svg class="i" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
 
   async function request(method, url, body) {
     const opts = { method, credentials: "same-origin", headers: { "Accept": "application/json" } };
@@ -55,25 +59,25 @@
     setBadge(c.count);
     notes.innerHTML = (c.notes || []).map(n => `<div class="alert alert-warning py-2 small mt-2 mb-0">${esc(n)}</div>`).join("");
     if (!c.items.length) {
-      list.innerHTML = `<li class="cart-empty"><div class="big">🧺</div><p>Your cart is empty.</p>
+      list.innerHTML = `<li class="cart-empty"><span class="empty-ico">${ico("shopping-basket")}</span><strong>Your cart is empty</strong><p>Add produce from the listings and it will show up here.</p>
         <button class="btn btn-primary" data-bs-dismiss="offcanvas">Browse produce</button></li>`;
       foot.hidden = true;
       return;
     }
     list.innerHTML = c.items.map(i => `
       <li class="ci" data-id="${i.id}" data-max="${i.max}" data-qty="${i.qty}">
-        <span class="ci-emo" aria-hidden="true">${i.emoji}</span>
+        <span class="ci-art" data-p="${esc(i.produce)}">${art(i.produce, "md", i.photo)}</span>
         <div class="ci-main">
           <strong>${esc(i.name)}</strong>
           <small>${esc(i.farmer)}, ${esc(i.location)} · Grade ${esc(i.grade)}</small>
           <small>${kes(i.price)} per kg</small>
           <div class="qty-pick sm">
-            <button type="button" data-act="dec" aria-label="Less">−</button>
+            <button type="button" data-act="dec" aria-label="Less">${ico("minus")}</button>
             <input type="number" min="1" max="${i.max}" value="${i.qty}" aria-label="Kilograms">
-            <button type="button" data-act="inc" aria-label="More">+</button><span>kg</span>
+            <button type="button" data-act="inc" aria-label="More">${ico("plus")}</button><span>kg</span>
           </div>
         </div>
-        <div class="ci-side"><b>${kes(i.line)}</b><button type="button" class="ci-del" data-act="del" aria-label="Remove ${esc(i.name)}">✕</button></div>
+        <div class="ci-side"><b>${kes(i.line)}</b><button type="button" class="ci-del" data-act="del" aria-label="Remove ${esc(i.name)}">${ico("x")}</button></div>
       </li>`).join("");
     document.getElementById("c-sub").textContent = kes(c.subtotal);
     document.getElementById("c-del").textContent = kes(c.delivery);
@@ -107,27 +111,29 @@
     setQty(Number(li.dataset.id), Math.max(1, Number(e.target.value) || 1));
   });
 
-  function fly(fromEl, emoji) {
+  function fly(fromEl) {
     const target = document.getElementById("cart-btn");
     if (reduce || !fromEl || !target) return;
     const a = fromEl.getBoundingClientRect(), b = target.getBoundingClientRect();
-    const dx = (b.left + b.width / 2) - (a.left + a.width / 2), dy = (b.top + b.height / 2) - (a.top + a.height / 2);
-    const el = document.createElement("span");
-    el.className = "fly"; el.textContent = emoji;
-    el.style.left = (a.left + a.width / 2) + "px"; el.style.top = (a.top + a.height / 2) + "px";
+    const size = 56;
+    const sx = a.left + a.width / 2 - size / 2, sy = a.top + a.height / 2 - size / 2;
+    const dx = (b.left + b.width / 2 - size / 2) - sx, dy = (b.top + b.height / 2 - size / 2) - sy;
+    const el = fromEl.cloneNode(true);
+    el.removeAttribute("class"); el.setAttribute("class", "fly");
+    el.style.cssText = `left:${sx}px;top:${sy}px;width:${size}px;height:${size}px`;
     document.body.appendChild(el);
     el.animate([
-      { transform: "translate(-50%,-50%) scale(1) rotate(0)", opacity: 1 },
-      { transform: `translate(calc(-50% + ${dx * 0.5}px), calc(-50% + ${dy * 0.5 - 90}px)) scale(1.5) rotate(120deg)`, opacity: 1, offset: 0.45 },
-      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.3) rotate(300deg)`, opacity: .3 }
-    ], { duration: 800, easing: "ease-in-out" }).onfinish = () => el.remove();
+      { transform: "translate(0,0) scale(1)", opacity: 1 },
+      { transform: `translate(${dx * 0.55}px, ${dy * 0.55 - 70}px) scale(.8)`, opacity: 1, offset: 0.5 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.25)`, opacity: .2 }
+    ], { duration: 650, easing: "cubic-bezier(.4,0,.2,1)" }).onfinish = () => el.remove();
   }
 
-  async function add(listingId, qty, fromEl, emoji, name) {
+  async function add(listingId, qty, fromEl, slug, name) {
     const r = await request("POST", "/api/cart/add/", { listingId, qty });
     if (!r.ok) { toast(r.error); return false; }
-    fly(fromEl, emoji);
-    setTimeout(() => render(r.data), reduce ? 0 : 650);
+    fly(fromEl);
+    setTimeout(() => render(r.data), reduce ? 0 : 560);
     toast(r.data.notes && r.data.notes.length ? r.data.notes[r.data.notes.length - 1]
                                                : `Added ${r.data.added} kg of ${name} to your cart.`);
     document.dispatchEvent(new CustomEvent("soko:cart-changed"));

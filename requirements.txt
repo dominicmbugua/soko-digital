@@ -2,4 +2,3 @@ Django>=5.2,<7
 Pillow
 python-dotenv
 requests
-djangorestframework

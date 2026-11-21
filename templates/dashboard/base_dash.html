@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-<main class="container dash">
+<main id="main" class="container dash">
   <aside class="dash-side">
     <div class="who">
       <span class="avatar">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>

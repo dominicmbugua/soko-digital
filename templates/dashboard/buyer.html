@@ -3,29 +3,28 @@
 {% block title %}My orders – Soko Digital{% endblock %}
 {% block rolelabel %}Buyer account{% endblock %}
 {% block side %}
-  <a href="#overview">📊 Overview</a><a href="#orders">📦 My orders</a>
+  <a href="#overview">{% icon "layout-dashboard" %}Overview</a><a href="#orders">{% icon "package" %}My orders</a>
   <a class="side-cta" href="{% url 'home' %}#buy">Browse produce</a>
 {% endblock %}
 {% block dash %}
 <section id="overview">
-  <h1 class="h2">Hello, {{ user.first_name|default:user.username }} 👋</h1>
+  <h1 class="h2">Hello, {{ user.first_name|default:user.username }}</h1>
   <p class="sub">Track your orders and confirm deliveries here.</p>
-  {% if needs_action %}<div class="alert alert-warning">🔔 <strong>{{ needs_action }} order{{ needs_action|pluralize }} need{{ needs_action|pluralize:"s," }} your attention.</strong> See the buttons below.</div>{% endif %}
+  {% if needs_action %}<div class="alert alert-warning alert-icon">{% icon "bell" %}<div><strong>{{ needs_action }} order{{ needs_action|pluralize }} need{{ needs_action|pluralize:"s," }} your attention.</strong> See the buttons below.</div></div>{% endif %}
   <div class="stat-grid">
-    {% include "dashboard/_stat.html" with icon="🚚" label="Active orders" value=active_count hint="Not finished yet" %}
-    {% include "dashboard/_stat.html" with icon="🔔" label="Need your action" value=needs_action hint="Pay or confirm" %}
-    {% include "dashboard/_stat.html" with icon="🧾" label="Total spent" prefix="KES " value=spent hint="Paid orders, incl. delivery" %}
-    {% include "dashboard/_stat.html" with icon="📦" label="All orders" value=order_count %}
+    {% include "dashboard/_stat.html" with icon="truck" label="Active orders" value=active_count hint="Not finished yet" %}
+    {% include "dashboard/_stat.html" with icon="bell" label="Need your action" value=needs_action hint="Pay or confirm" %}
+    {% include "dashboard/_stat.html" with icon="receipt" label="Total spent" prefix="KES " value=spent hint="Paid orders, incl. delivery" %}
+    {% include "dashboard/_stat.html" with icon="package" label="All orders" value=order_count %}
   </div>
 </section>
 
 <section id="orders">
   <h2 class="h4 mt-4 mb-3">My orders</h2>
   {% for o in orders %}
-  <article class="order-card">
+  <article class="order-card wow fadeInUp">
     <header>
-      <div><span class="emo">{{ o.listing.produce.slug|emoji }}</span> <strong>{{ o.listing.produce.name }}</strong>
-        <small class="text-muted">· {{ o.qty_kg }} kg from {{ o.listing.farmer_name }}, {{ o.listing.location }}</small></div>
+      <div class="oi"><span class="ci-art" data-p="{{ o.listing.produce.slug }}">{% produce_art o.listing.produce.slug "md" %}</span><div><strong>{{ o.listing.produce.name }}</strong><br><small class="text-muted">{{ o.qty_kg }} kg from {{ o.listing.farmer_name }}, {{ o.listing.location }}</small></div></div>
       <span class="st st-{{ o.status }}">{{ o.get_status_display }}</span>
     </header>
     {% if o.step >= 0 %}
@@ -49,7 +48,7 @@
     </footer>
   </article>
   {% empty %}
-  <div class="panel text-center py-5"><p class="mb-3">You haven't ordered anything yet.</p><a class="btn btn-primary" href="{% url 'home' %}#buy">Browse produce</a></div>
+  <div class="wow fadeInUp panel text-center py-5"><p class="mb-3">You haven't ordered anything yet.</p><a class="btn btn-primary" href="{% url 'home' %}#buy">Browse produce</a></div>
   {% endfor %}
 </section>
 {% endblock %}

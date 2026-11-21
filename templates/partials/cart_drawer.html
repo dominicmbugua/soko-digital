@@ -1,6 +1,7 @@
+{% load market_extras %}
 <div class="offcanvas offcanvas-end cart-drawer" tabindex="-1" id="cart-drawer" aria-labelledby="cart-title">
   <div class="offcanvas-header">
-    <h2 class="h5 mb-0" id="cart-title">🛒 Your cart</h2>
+    <h2 class="h5 mb-0" id="cart-title">Your cart</h2>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
   <div class="offcanvas-body d-flex flex-column p-0">
@@ -10,8 +11,8 @@
       <div class="row-line"><span>Produce</span><span id="c-sub"></span></div>
       <div class="row-line"><span>Delivery to Nairobi</span><span id="c-del"></span></div>
       <div class="row-line total"><span>Total</span><span id="c-total"></span></div>
-      <a class="btn btn-primary btn-lg w-100 mt-3" href="{% url 'checkout' %}">Checkout <span class="arrow">→</span></a>
-      <p class="small text-muted text-center mt-2 mb-0">Payment is held until you confirm delivery.</p>
+      <a class="btn btn-primary btn-lg w-100 mt-3" href="{% url 'checkout' %}">Go to checkout {% icon "arrow-right" %}</a>
+      <p class="trust-line">{% icon "lock" %} Payment is held until you confirm delivery.</p>
     </div>
   </div>
 </div>

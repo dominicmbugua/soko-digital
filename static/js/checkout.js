@@ -35,8 +35,8 @@
 
   const host = document.querySelector(".confetti-host");
   if (host && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const colors = ["#16a34a", "#b6f23a", "#f59e0b", "#0b3b2c", "#ef4444", "#3b82f6"];
-    for (let i = 0; i < 40; i++) {
+    const colors = ["#1f7a4a", "#7fb552", "#e3a21a", "#14382a", "#c9432c"];
+    for (let i = 0; i < 30; i++) {
       const p = document.createElement("i");
       p.className = "confetti";
       p.style.cssText = `left:${Math.random() * 100}vw;background:${colors[i % colors.length]};--dx:${(Math.random() - 0.5) * 240}px;--r:${Math.random() * 720}deg;animation-delay:${Math.random() * 0.5}s;animation-duration:${2.2 + Math.random() * 1.4}s`;

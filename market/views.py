@@ -9,7 +9,7 @@ from django.urls import reverse
 from .forms import RegisterForm
 from .cart import Cart
 from .models import Checkout, Produce
-from .utils import emoji_for, role_of
+from .utils import emoji_for, photo_url, role_of
 
 
 def home(request):
@@ -19,7 +19,7 @@ def home(request):
 
     # Handed to static/js/main.js through {{ boot|json_script }}
     boot = {
-        "produce": [{"id": p.slug, "name": p.name, "emoji": emoji_for(p.slug), "ref": [p.ref_min, p.ref_max]} for p in produce],
+        "produce": [{"id": p.slug, "name": p.name, "emoji": emoji_for(p.slug), "photo": photo_url(p.slug), "ref": [p.ref_min, p.ref_max]} for p in produce],
         "config": {"feePercent": settings.SOKO_FEE_PERCENT, "deliveryPerKg": settings.SOKO_DELIVERY_PER_KG,
                    "demoMode": settings.DEMO_MODE},
         "user": {"name": request.user.get_full_name() or request.user.get_username(), "role": role}

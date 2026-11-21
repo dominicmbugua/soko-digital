@@ -29,7 +29,7 @@ Tables: `auth_user` (accounts), `market_profile` (farmer/buyer role, phone), `ma
 
 ## Buyer journey: cart to checkout
 1. **Browse and add to cart** (works before login). Pick kilograms on a listing card, then **Add to cart**. The cart lives in the session and survives login.
-2. **Cart drawer** (🛒 in the navbar): change kilograms, remove items, see produce + delivery (KES 6/kg) + total.
+2. **Cart drawer** (basket icon in the navbar): change kilograms, remove items, see produce + delivery (KES 6/kg) + total.
 3. **Checkout** (`/checkout/`, buyers only): delivery address, notes and M-Pesa number. Guests are sent to log in or register and come back here.
 4. **Pay**: one simulated M-Pesa payment for the whole cart. Stock is locked and checked first, so nothing is oversold and no half-orders are created.
 5. **Confirmation** (`/checkout/<id>/done/`): receipt, order list, what happens next. If payment failed, a "Pay now" button retries it.
@@ -69,3 +69,15 @@ Steps can't be skipped or repeated. Stock is locked while an order is created so
 3. Delivery: with `DEMO_MODE = True` the website marks orders delivered. For real use set it to `False`; the delivery team uses the admin action "Mark selected orders as delivered".
 4. Real escrow/payout (B2C to the farmer) needs a holding-account arrangement. Out of scope for the demo.
 5. Deploy: `DEBUG=False`, `ALLOWED_HOSTS`, secret key from env, Postgres, gunicorn + whitenoise.
+
+## Look and feel
+- **Real photos are included** for all 8 produce types in `static/images/produce/` (900x675 JPG). Check the licence/attribution terms of wherever they came from before launch.
+- **Replacing or adding photos:** drop photos named after the produce into `static/images/produce/` (`potatoes.jpg`, `maize.jpg`, `tomatoes.jpg`, `kale.jpg`, `onions.jpg`, `beans.jpg`, `bananas.jpg`, `avocados.jpg`), or run `python tools/prep_photos.py <your photos folder>` to resize and crop them. The site uses a photo automatically wherever one exists, and keeps the illustration for any produce without one.
+- **No emoji in the UI.** Produce is drawn as illustrations in `templates/partials/sprite.html` (one SVG per produce, id `p-<slug>`), and UI icons are Lucide line icons (ISC licence) in the same file (id `i-<name>`).
+- In templates: `{% load market_extras %}` then `{% produce_art p.slug "md" %}` (sizes `xs sm md lg`) or `{% icon "truck" %}`. In JS: `<svg class="pa"><use href="#p-maize"/></svg>`.
+- **Adding a new produce type:** it shows a neutral sprout until you add a symbol `p-<slug>` to the sprite and its slug to `KNOWN_ART` in `market/templatetags/market_extras.py`. Add a tint for it in `static/css/style.css` (the `[data-p=...]` rules).
+- Design tokens (colours, radii, fonts) are at the top of `static/css/style.css`. Fonts: Bricolage Grotesque (headings) and Figtree (text).
+- Scrolling is native. The pinned "journey" scene, parallax, tilting cards and ticker strip were removed on purpose.
+- **Entrance animations (WOW.js style, no library):** add `class="wow fadeInUp"` (also `fadeInLeft`, `fadeInRight`, `fadeIn`, `zoomIn`) and optionally `data-wow-delay="0.3s"` to any element. It animates once when it scrolls into view. Code: `static/js/motion.js` and the "Entrance animations" block at the end of `static/css/style.css`. For content added by JavaScript, call `Wow.refresh()` after inserting it (the listings do this).
+- `motion.js` also runs the first-visit loading screen (once per browser tab) and the back-to-top button. Everything is skipped for people who set "reduce motion" on their device.
+- The `emoji` fields in the API and `utils.emoji_for` are still there for compatibility but the UI no longer uses them.

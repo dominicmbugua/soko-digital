@@ -30,5 +30,22 @@ EMOJI = {"potatoes": "🥔", "maize": "🌽", "tomatoes": "🍅", "kale": "🥬"
          "onions": "🧅", "beans": "🫘", "bananas": "🍌", "avocados": "🥑"}
 
 
+PHOTO_EXTS = ("webp", "jpg", "jpeg", "png")
+
+
+def photo_url(slug):
+    """URL of static/images/produce/<slug>.(webp|jpg|jpeg|png) if that photo exists, else "" (the UI then
+    shows the illustration). Drop real photos into that folder named after the produce slug."""
+    from django.contrib.staticfiles import finders
+    from django.contrib.staticfiles.storage import staticfiles_storage
+    from django.templatetags.static import static
+
+    for ext in PHOTO_EXTS:
+        rel = f"images/produce/{slug}.{ext}"
+        if finders.find(rel) or staticfiles_storage.exists(rel):
+            return static(rel)
+    return ""
+
+
 def emoji_for(slug):
     return EMOJI.get(slug, "🌱")

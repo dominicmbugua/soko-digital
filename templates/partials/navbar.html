@@ -1,16 +1,15 @@
+{% load market_extras %}
 <nav class="navbar navbar-expand-md sticky-top site-nav">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'home' %}"><span class="logo-mark">🌱</span>Soko Digital</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle menu">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <a class="navbar-brand" href="{% url 'home' %}"><span class="logo-mark">{% icon "sprout" %}</span>Soko Digital</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle menu">{% icon "menu" %}</button>
     <div class="collapse navbar-collapse" id="nav">
       <ul class="navbar-nav ms-auto align-items-md-center">
         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#buy">Buy produce</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#sell">Sell produce</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#how">How payment works</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}#sell">Sell produce</a></li>
         {% if not user.is_authenticated or user.profile.role == "buyer" %}
-          <li class="nav-item"><button type="button" class="cart-btn" id="cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cart-drawer" aria-label="Open cart">🛒<span class="cart-badge" id="cart-badge" {% if not cart_count %}hidden{% endif %}>{{ cart_count }}</span></button></li>
+          <li class="nav-item"><button type="button" class="cart-btn" id="cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cart-drawer" aria-label="Open cart">{% icon "shopping-basket" %}<span class="cart-badge" id="cart-badge" {% if not cart_count %}hidden{% endif %}>{{ cart_count }}</span></button></li>
         {% endif %}
         {% if user.is_authenticated %}
           <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">My dashboard</a></li>
