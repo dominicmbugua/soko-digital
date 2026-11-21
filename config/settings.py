@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
 
     # Local apps
+    'rest_framework',
     'market',
 ]
 
