@@ -1,0 +1,54 @@
+{% extends "dashboard/base_dash.html" %}
+{% load humanize market_extras %}
+{% block title %}My orders – Soko Digital{% endblock %}
+{% block rolelabel %}Buyer account{% endblock %}
+{% block side %}
+  <a href="#overview">{% icon "layout-dashboard" %}Overview</a><a href="#orders">{% icon "package" %}My orders</a>
+  <a class="side-cta" href="{% url 'market' %}">Browse produce</a>
+{% endblock %}
+{% block dash %}
+<section id="overview">
+  <h1 class="h2">Hello, {{ user.first_name|default:user.username }}</h1>
+  <p class="sub">Track your orders and confirm deliveries here.</p>
+  {% if needs_action %}<div class="alert alert-warning alert-icon">{% icon "bell" %}<div><strong>{{ needs_action }} order{{ needs_action|pluralize }} need{{ needs_action|pluralize:"s," }} your attention.</strong> See the buttons below.</div></div>{% endif %}
+  <div class="stat-grid">
+    {% include "dashboard/_stat.html" with icon="truck" label="Active orders" value=active_count hint="Not finished yet" %}
+    {% include "dashboard/_stat.html" with icon="bell" label="Need your action" value=needs_action hint="Pay or confirm" %}
+    {% include "dashboard/_stat.html" with icon="receipt" label="Total spent" prefix="KES " value=spent hint="Paid orders, incl. delivery" %}
+    {% include "dashboard/_stat.html" with icon="package" label="All orders" value=order_count %}
+  </div>
+</section>
+
+<section id="orders">
+  <h2 class="h4 mt-4 mb-3">My orders</h2>
+  {% for o in orders %}
+  <article class="order-card wow fadeInUp">
+    <header>
+      <div class="oi"><span class="ci-art" data-p="{{ o.listing.produce.slug }}">{% produce_art o.listing.produce.slug "md" %}</span><div><strong>{{ o.listing.produce.name }}</strong><br><small class="text-muted">{{ o.qty_kg }} kg from {{ o.listing.farmer_name }}, {{ o.listing.location }}</small></div></div>
+      <span class="st st-{{ o.status }}">{{ o.get_status_display }}</span>
+    </header>
+    {% if o.step >= 0 %}
+    <ol class="tracker" data-step="{{ o.step }}" {% if o.status == "DISPUTED" %}data-warn="1"{% endif %}>
+      <li>Ordered</li><li>Paid</li><li>Delivered</li><li>Confirmed</li>
+    </ol>
+    {% endif %}
+    <footer>
+      <div class="meta"><strong>{{ o.ref }}</strong> · KES {{ o.total|intcomma }} <small class="text-muted">(produce {{ o.produce_value|intcomma }} + delivery {{ o.delivery_fee|intcomma }})</small>
+        {% if o.mpesa_receipt %}<br><small class="text-muted">M-Pesa ref {{ o.mpesa_receipt }} · {{ o.created|naturaltime }}</small>{% else %}<br><small class="text-muted">{{ o.created|naturaltime }}</small>{% endif %}</div>
+      <div class="acts">
+        {% if o.status == "AWAITING_PAYMENT" %}{% if o.checkout_id %}<button class="btn btn-primary btn-sm" data-api="{% url 'api_checkout_pay' o.checkout_id %}">Pay now (simulated)</button>{% else %}<button class="btn btn-primary btn-sm" data-api="{% url 'api_collect_payment' %}" data-body='{"orderId": {{ o.id }}}'>Pay now (simulated)</button>{% endif %}{% endif %}
+        {% if o.status == "PAYMENT_HELD" %}<span class="note">Money held. Waiting for delivery.</span>{% if demo %}<button class="btn btn-outline-dark btn-sm" data-api="{% url 'api_deliver_order' o.id %}">Simulate delivery</button>{% endif %}{% endif %}
+        {% if o.status == "DELIVERED" %}
+          <button class="btn btn-primary btn-sm" data-api="{% url 'api_confirm_order' o.id %}">Confirm delivery</button>
+          <button class="btn btn-outline-dark btn-sm" data-api="{% url 'api_report_order' o.id %}" data-confirm="Report a problem? Your money stays on hold and the farmer is not paid until we review.">Report a problem</button>
+        {% endif %}
+        {% if o.status == "DISPUTED" %}<span class="note">Under review. Your money stays on hold.</span>{% endif %}
+        {% if o.status == "SETTLED" or o.status == "REFUNDED" %}<a class="btn btn-outline-dark btn-sm" href="{% url 'market' %}?produce={{ o.listing.produce.slug }}">Order again</a>{% endif %}
+      </div>
+    </footer>
+  </article>
+  {% empty %}
+  <div class="wow fadeInUp panel text-center py-5"><p class="mb-3">You haven't ordered anything yet.</p><a class="btn btn-primary" href="{% url 'market' %}">Browse produce</a></div>
+  {% endfor %}
+</section>
+{% endblock %}

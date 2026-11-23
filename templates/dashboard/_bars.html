@@ -1,0 +1,3 @@
+<div class="bars" role="img" aria-label="{{ title }}">
+  {% for d in series %}<div class="bar" title="{{ d.label }}: {{ unit }}{{ d.value }}"><i style="--h:{{ d.pct }}%;--n:{{ forloop.counter0 }}"></i><span>{% if forloop.counter0|divisibleby:3 %}{{ d.label }}{% endif %}</span></div>{% endfor %}
+</div>

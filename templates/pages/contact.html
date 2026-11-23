@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load market_extras %}
+{% block title %}Contact us – Soko Digital{% endblock %}
+{% block meta_description %}Get in touch with Soko Digital: questions from farmers and buyers, problems with an order, or partnerships.{% endblock %}
+
+{% block content %}
+<main id="main">
+  {% include "partials/page_header.html" with title="Contact us" intro="Questions from farmers or buyers, a problem with an order, or an idea to work together. We read every message." %}
+  <section class="section pt-4">
+    <div class="container">
+      <div class="row gy-5 gx-lg-5">
+        <div class="col-lg-5 wow fadeInLeft" data-wow-delay="0.1s">
+          <h2 class="h3">Talk to us</h2>
+          <ul class="info-list">
+            {% if site.email %}<li><span class="i-ico">{% icon "mail" %}</span><div><b>Email</b><a href="mailto:{{ site.email }}">{{ site.email }}</a></div></li>{% endif %}
+            {% if site.phone %}<li><span class="i-ico">{% icon "phone" %}</span><div><b>Phone</b><a href="tel:{{ site.phone_href }}">{{ site.phone }}</a></div></li>{% endif %}
+            {% if site.whatsapp_url %}<li><span class="i-ico">{% icon "message-circle" %}</span><div><b>WhatsApp</b><a href="{{ site.whatsapp_url }}" rel="noopener">Chat with us</a></div></li>{% endif %}
+            <li><span class="i-ico">{% icon "map-pin" %}</span><div><b>Where we operate</b><span>Molo and Nakuru to Nairobi</span></div></li>
+            <li><span class="i-ico">{% icon "circle-help" %}</span><div><b>Quick answers</b><a href="{% url 'faq' %}">Read the FAQ</a></div></li>
+          </ul>
+          <p class="small text-muted mt-4 mb-0">About an order? Include your order number (it looks like ORD-0001) so we can find it fast.</p>
+        </div>
+        <div class="col-lg-7 wow fadeInRight" data-wow-delay="0.25s">
+          <form method="post" class="contact-form" novalidate>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">{% include "partials/field.html" with field=form.name %}</div>
+              <div class="col-md-6">{% include "partials/field.html" with field=form.contact %}</div>
+              <div class="col-12">{% include "partials/field.html" with field=form.topic %}</div>
+              <div class="col-12">{% include "partials/field.html" with field=form.message %}</div>
+              <div class="hp" aria-hidden="true"><label>Leave this empty {{ form.website }}</label></div>
+              <div class="col-12"><button type="submit" class="btn btn-primary btn-lg">Send message {% icon "arrow-right" %}</button></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

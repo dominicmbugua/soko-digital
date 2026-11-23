@@ -1,0 +1,48 @@
+{% load market_extras %}
+<footer class="site-footer wow fadeIn">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-4">
+        <div class="brand"><span class="logo-mark">{% icon "sprout" %}</span>Soko Digital</div>
+        <p class="mt-3 foot-copy">Farm-fresh produce, paid for when it arrives. A marketplace connecting Kenyan farmers with the businesses that buy from them. Pilot route: Molo and Nakuru to Nairobi.</p>
+        {% if site.has_contact %}
+        <ul class="foot-contact">
+          {% if site.email %}<li>{% icon "mail" %}<a href="mailto:{{ site.email }}">{{ site.email }}</a></li>{% endif %}
+          {% if site.phone %}<li>{% icon "phone" %}<a href="tel:{{ site.phone_href }}">{{ site.phone }}</a></li>{% endif %}
+          {% if site.whatsapp_url %}<li>{% icon "message-circle" %}<a href="{{ site.whatsapp_url }}" rel="noopener">WhatsApp us</a></li>{% endif %}
+        </ul>
+        {% endif %}
+      </div>
+      <div class="col-6 col-md-3 col-lg-2 offset-lg-1">
+        <h2 class="foot-h">Marketplace</h2>
+        <ul class="foot-list">
+          <li><a href="{% url 'market' %}">Browse produce</a></li>
+          <li><a href="{% url 'sell' %}">Sell produce</a></li>
+          <li><a href="{% url 'how_it_works' %}">How it works</a></li>
+          <li><a href="{% url 'faq' %}">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        <h2 class="foot-h">Company</h2>
+        <ul class="foot-list">
+          <li><a href="{% url 'about' %}">About us</a></li>
+          <li><a href="{% url 'contact' %}">Contact</a></li>
+          <li><a href="{% url 'terms' %}">Terms of use</a></li>
+          <li><a href="{% url 'privacy' %}">Privacy</a></li>
+        </ul>
+      </div>
+      <div class="col-md-6 col-lg-2">
+        <h2 class="foot-h">Your account</h2>
+        <ul class="foot-list">
+          {% if user.is_authenticated %}
+            <li><a href="{% url 'dashboard' %}">My dashboard</a></li>
+          {% else %}
+            <li><a href="{% url 'login' %}">Log in</a></li>
+            <li><a href="{% url 'register' %}">Register</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    <p class="foot-note">Payments are simulated in this demo. No real money moves.</p>
+  </div>
+</footer>

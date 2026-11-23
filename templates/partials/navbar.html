@@ -1,0 +1,33 @@
+{% load market_extras %}{% with page=request.resolver_match.url_name %}
+<nav class="navbar navbar-expand-lg sticky-top site-nav" aria-label="Main">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'home' %}"><span class="logo-mark">{% icon "sprout" %}</span>Soko Digital</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle menu">{% icon "menu" %}</button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item"><a class="nav-link{% if page == 'market' %} active{% endif %}" href="{% url 'market' %}">Marketplace</a></li>
+        <li class="nav-item"><a class="nav-link{% if page == 'how_it_works' %} active{% endif %}" href="{% url 'how_it_works' %}">How it works</a></li>
+        <li class="nav-item"><a class="nav-link{% if page == 'sell' %} active{% endif %}" href="{% url 'sell' %}">Sell produce</a></li>
+        <li class="nav-item"><a class="nav-link{% if page == 'about' %} active{% endif %}" href="{% url 'about' %}">About</a></li>
+        <li class="nav-item"><a class="nav-link{% if page == 'contact' %} active{% endif %}" href="{% url 'contact' %}">Contact</a></li>
+        {% if not user.is_authenticated or user.profile.role == "buyer" %}
+          <li class="nav-item"><button type="button" class="cart-btn" id="cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cart-drawer" aria-label="Open cart">{% icon "shopping-basket" %}<span class="cart-badge" id="cart-badge" {% if not cart_count %}hidden{% endif %}>{{ cart_count }}</span></button></li>
+        {% endif %}
+        {% if user.is_authenticated %}
+          <li class="nav-item"><a class="nav-link{% if page == 'dashboard' or page == 'farmer_dashboard' or page == 'buyer_dashboard' or page == 'ops_dashboard' %} active{% endif %}" href="{% url 'dashboard' %}">My dashboard</a></li>
+          <li class="nav-item ms-lg-2">
+            <form method="post" action="{% url 'logout' %}" class="d-flex align-items-center gap-2">
+              {% csrf_token %}
+              <span class="small text-muted">{{ user.first_name|default:user.username }}</span>
+              <button type="submit" class="btn btn-outline-dark btn-sm">Log out</button>
+            </form>
+          </li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Log in</a></li>
+          <li class="nav-item ms-lg-2"><a class="btn btn-primary btn-sm" href="{% url 'register' %}">Register</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endwith %}

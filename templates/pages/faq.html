@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load market_extras %}
+{% block title %}FAQ – Soko Digital{% endblock %}
+{% block meta_description %}Answers to common questions from buyers and farmers: payments, fees, delivery, grading and what happens if there is a problem.{% endblock %}
+
+{% block content %}
+<main id="main">
+  {% include "partials/page_header.html" with title="Frequently asked questions" intro="Quick answers for buyers and farmers. Cannot find yours? Just ask." %}
+  <section class="section pt-4">
+    <div class="container">
+      <div class="row gx-xl-5 gy-4">
+        <div class="col-lg-7 col-xl-8">
+      <section class="faq-group wow fadeInUp" id="buyers">
+        <h2 class="h4">For buyers</h2>
+<div class="accordion faq" id="acc-buyers">
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-0" aria-expanded="false" aria-controls="c-buyers-0">Do I need an account to browse?</button></h3>
+    <div id="c-buyers-0" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">No. You can browse the marketplace and fill your cart without an account. You need a buyer account to check out, and you will be asked to register or log in at that point. Your cart is kept.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-1" aria-expanded="false" aria-controls="c-buyers-1">Who can buy on Soko Digital?</button></h3>
+    <div id="c-buyers-1" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">Businesses that buy produce in quantity: restaurants, caterers, schools and vendors. Register as a buyer and you can order from any farmer on the marketplace.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-2" aria-expanded="false" aria-controls="c-buyers-2">Can I order from more than one farmer at a time?</button></h3>
+    <div id="c-buyers-2" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">Yes. Add produce from as many farmers as you like and pay once. Behind the scenes each farmer gets their own order, so each is tracked and paid separately.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-3" aria-expanded="false" aria-controls="c-buyers-3">How do I pay?</button></h3>
+    <div id="c-buyers-3" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">By M-Pesa. At checkout you give the number that will pay. For now payments are simulated while we finish connecting live M-Pesa, so no real money moves yet.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-4" aria-expanded="false" aria-controls="c-buyers-4">Is my money safe?</button></h3>
+    <div id="c-buyers-4" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">Your payment is held when you order. It is only released to the farmer after you confirm delivery.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-5" aria-expanded="false" aria-controls="c-buyers-5">What if the produce is not right?</button></h3>
+    <div id="c-buyers-5" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">Report a problem on that order from your dashboard instead of confirming it. Nothing is paid out while the report is open. Our team looks into it and either releases the payment to the farmer or refunds you.</div></div>
+  </div>
+</div>
+      </section>
+      <section class="faq-group wow fadeInUp" id="farmers">
+        <h2 class="h4">For farmers</h2>
+<div class="accordion faq" id="acc-farmers">
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-farmers-0" aria-expanded="false" aria-controls="c-farmers-0">How do I start selling?</button></h3>
+    <div id="c-farmers-0" class="accordion-collapse collapse" data-bs-parent="#acc-farmers"><div class="accordion-body">Register as a farmer with the M-Pesa number you want to be paid on, then post a listing: the produce, how many kilograms you have (at least 10), your grade estimate, where it is, and your price per kilogram.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-farmers-1" aria-expanded="false" aria-controls="c-farmers-1">Who sets the price?</button></h3>
+    <div id="c-farmers-1" class="accordion-collapse collapse" data-bs-parent="#acc-farmers"><div class="accordion-body">You do. We show the usual price range for each produce so you can see where you stand, but the decision is yours.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-farmers-2" aria-expanded="false" aria-controls="c-farmers-2">When do I get paid?</button></h3>
+    <div id="c-farmers-2" class="accordion-collapse collapse" data-bs-parent="#acc-farmers"><div class="accordion-body">After the buyer confirms delivery. You receive your price minus our fee. Your dashboard shows what has been paid out and what is still on its way.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-farmers-3" aria-expanded="false" aria-controls="c-farmers-3">What does Soko Digital charge?</button></h3>
+    <div id="c-farmers-3" class="accordion-collapse collapse" data-bs-parent="#acc-farmers"><div class="accordion-body">A {{ site.fee }}% fee on your price, taken only when you are paid. There is no charge to register or to post a listing.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-farmers-4" aria-expanded="false" aria-controls="c-farmers-4">Do I need to bring my produce somewhere?</button></h3>
+    <div id="c-farmers-4" class="accordion-collapse collapse" data-bs-parent="#acc-farmers"><div class="accordion-body">Yes. After you list, bring your produce to the collection point so it can be weighed and graded before it travels. We handle delivery to the buyer.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-farmers-5" aria-expanded="false" aria-controls="c-farmers-5">Can I change or remove a listing?</button></h3>
+    <div id="c-farmers-5" class="accordion-collapse collapse" data-bs-parent="#acc-farmers"><div class="accordion-body">Yes. From your dashboard you can edit a listing, pause it so buyers cannot order, or delete it.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-farmers-6" aria-expanded="false" aria-controls="c-farmers-6">What if a buyer reports a problem?</button></h3>
+    <div id="c-farmers-6" class="accordion-collapse collapse" data-bs-parent="#acc-farmers"><div class="accordion-body">Your dashboard will show it and our team will contact you. We review the report and decide whether to release the payment to you or refund the buyer.</div></div>
+  </div>
+</div>
+      </section>
+      <section class="faq-group wow fadeInUp" id="delivery">
+        <h2 class="h4">Delivery and produce</h2>
+<div class="accordion faq" id="acc-delivery">
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-delivery-0" aria-expanded="false" aria-controls="c-delivery-0">Where do you deliver?</button></h3>
+    <div id="c-delivery-0" class="accordion-collapse collapse" data-bs-parent="#acc-delivery"><div class="accordion-body">We deliver to Nairobi. Our pilot route runs from Molo and Nakuru to Nairobi.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-delivery-1" aria-expanded="false" aria-controls="c-delivery-1">How much is delivery?</button></h3>
+    <div id="c-delivery-1" class="accordion-collapse collapse" data-bs-parent="#acc-delivery"><div class="accordion-body">KES {{ site.delivery }} per kilogram. You see the exact amount in your cart before you pay.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-delivery-2" aria-expanded="false" aria-controls="c-delivery-2">What produce is available?</button></h3>
+    <div id="c-delivery-2" class="accordion-collapse collapse" data-bs-parent="#acc-delivery"><div class="accordion-body">Potatoes, maize, tomatoes, kale (sukuma wiki), onions, beans, bananas and avocados. What you can order depends on what farmers have listed.</div></div>
+  </div>
+  <div class="accordion-item">
+    <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-delivery-3" aria-expanded="false" aria-controls="c-delivery-3">What do the grades A, B and C mean?</button></h3>
+    <div id="c-delivery-3" class="accordion-collapse collapse" data-bs-parent="#acc-delivery"><div class="accordion-body">Farmers give a grade estimate when they list, and produce is checked at the collection point. The grade tells you what quality to expect, so you can choose what fits your business.</div></div>
+  </div>
+</div>
+      </section>
+      <div class="join-card wow fadeInUp d-lg-none">
+        <span class="jc-ico">{% icon "circle-help" %}</span>
+        <div>
+          <h3>Still not sure?</h3>
+          <p>Send us your question and we will get back to you.</p>
+          <div class="btns"><a class="btn btn-primary" href="{% url 'contact' %}">Contact us</a><a class="btn btn-outline-dark" href="{% url 'how_it_works' %}">How it works</a></div>
+        </div>
+      </div>
+        </div>
+        <div class="col-lg-5 col-xl-4 d-none d-lg-block">
+          <aside class="photo-stack">
+            <figure class="photo-card big" data-p="avocados">
+              {% produce_art "avocados" "cover" %}
+              <figcaption class="photo-chip">{% icon "circle-help" %}<span>Questions? We read every message</span></figcaption>
+            </figure>
+            <nav class="jump" aria-label="Jump to a section">
+              <b>Jump to</b>
+              <a href="#buyers">For buyers {% icon "arrow-right" %}</a>
+              <a href="#farmers">For farmers {% icon "arrow-right" %}</a>
+              <a href="#delivery">Delivery and produce {% icon "arrow-right" %}</a>
+            </nav>
+            <div class="help-card">
+              <h3>Still not sure?</h3>
+              <p>Send us your question and we will get back to you.</p>
+              <div class="btns"><a class="btn btn-primary" href="{% url 'contact' %}">Contact us</a><a class="btn btn-outline-dark" href="{% url 'how_it_works' %}">How it works</a></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

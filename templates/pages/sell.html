@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static market_extras %}
+{% block title %}Sell your produce – Soko Digital{% endblock %}
+{% block meta_description %}List your harvest on Soko Digital, set your own price per kilogram and get paid once the buyer confirms delivery.{% endblock %}
+
+{% block content %}
+<main id="main">
+  {% include "partials/page_header.html" with title="Sell your produce" intro="Set your own price per kilogram. We show the usual range so you can see where you stand." %}
+
+  <section class="section pt-4" id="list">
+    <div class="container">
+      <div class="row gy-5 gx-lg-5">
+        <div class="col-lg-5 wow fadeInLeft" data-wow-delay="0.1s">
+          <h2 class="h3">Post a listing</h2>
+          <p class="mt-3">After you list, bring your produce to the collection point so it can be weighed and graded. Buyers can order as soon as your listing is live.</p>
+          <ul class="perks">
+            <li>{% icon "badge-check" %}You choose the price</li>
+            <li>{% icon "scale" %}We weigh and grade it for you</li>
+            <li>{% icon "wallet" %}You're paid once the buyer confirms</li>
+          </ul>
+        </div>
+        <div class="col-lg-7 wow fadeInRight" data-wow-delay="0.25s">
+          {% if role == "farmer" %}
+          <form id="sell-form" class="row g-3" novalidate>
+            <div class="col-md-6">
+              <label for="s-name" class="form-label">Listing as</label>
+              <input id="s-name" class="form-control" value="{{ user.get_full_name|default:user.username }}" readonly>
+            </div>
+            <div class="col-md-6">
+              <label for="s-location" class="form-label">Where is the produce?</label>
+              <input id="s-location" class="form-control" placeholder="e.g. Molo" value="{{ default_location }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="s-produce" class="form-label">Produce</label>
+              <select id="s-produce" class="form-select">
+                {% for p in produce %}<option value="{{ p.slug }}">{{ p.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="s-grade" class="form-label">Your grade estimate</label>
+              <select id="s-grade" class="form-select">
+                <option>A</option><option>B</option><option>C</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="s-qty" class="form-label">Quantity (kg)</label>
+              <input id="s-qty" type="number" inputmode="numeric" min="10" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label for="s-price" class="form-label">Your price (KES per kg)</label>
+              <input id="s-price" type="number" inputmode="numeric" min="1" class="form-control" required>
+            </div>
+            <div class="col-12"><div id="price-hint" class="form-text" aria-live="polite"></div></div>
+            <div class="col-12">
+              <button class="btn btn-primary btn-lg" type="submit">Post listing</button>
+              <span id="sell-msg" class="ms-3 fw-semibold" role="status"></span>
+            </div>
+          </form>
+          {% elif user.is_authenticated %}
+          <div class="alert alert-info mb-0">You are logged in as a <strong>{{ role|default:"staff" }}</strong>. Only farmer accounts can list produce. <a class="alert-link" href="{% url 'register' %}">Register a farmer account</a> to sell.</div>
+          {% else %}
+          <div class="join-card">
+            <span class="jc-ico">{% icon "tractor" %}</span>
+            <div>
+              <h3>Farmers need an account to list produce</h3>
+              <p>Every listing is tied to a real person, so buyers know who they are buying from. Registering is quick and uses your M-Pesa number.</p>
+              <div class="btns"><a class="btn btn-primary" href="{% url 'register' %}">Register as a farmer</a><a class="btn btn-outline-dark" href="{% url 'login' %}">Log in</a></div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band section">
+    <div class="container">
+      <div class="section-head wow fadeInUp">
+        <h2>What happens after you list</h2>
+      </div>
+      <ol class="how-steps light">
+        <li class="wow fadeInUp" data-wow-delay="0.1s"><span class="how-ico">{% icon "clipboard-check" %}</span><h3>Your listing goes live</h3><p>Buyers see your produce, your price and the usual range.</p></li>
+        <li class="wow fadeInUp" data-wow-delay="0.25s"><span class="how-ico">{% icon "package" %}</span><h3>You bring it to the collection point</h3><p>We weigh it and check the grade before it travels.</p></li>
+        <li class="wow fadeInUp" data-wow-delay="0.4s"><span class="how-ico">{% icon "truck" %}</span><h3>We deliver it</h3><p>One delivery to the buyer's address in Nairobi.</p></li>
+        <li class="wow fadeInUp" data-wow-delay="0.55s"><span class="how-ico">{% icon "hand-coins" %}</span><h3>You get paid</h3><p>When the buyer confirms: your price minus our {{ site.fee }}% fee.</p></li>
+      </ol>
+      <p class="mt-4 mb-0 wow fadeInUp">Questions? Read the <a href="{% url 'faq' %}">farmer FAQ</a> or <a href="{% url 'contact' %}">get in touch</a>.</p>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{{ boot|json_script:"boot-data" }}
+<script src="{% static 'js/main.js' %}"></script>
+{% endblock %}

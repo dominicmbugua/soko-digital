@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<main id="main" class="container dash">
+  <aside class="dash-side">
+    <div class="who">
+      <span class="avatar">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
+      <div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% block rolelabel %}{% endblock %}</small></div>
+    </div>
+    <nav>{% block side %}{% endblock %}</nav>
+  </aside>
+  <div class="dash-main">{% block dash %}{% endblock %}</div>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/dashboard.js' %}"></script>{% endblock %}

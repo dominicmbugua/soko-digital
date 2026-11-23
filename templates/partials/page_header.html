@@ -1,0 +1,7 @@
+<header class="page-hero">
+  <div class="container">
+    <nav class="crumbs wow fadeInUp" aria-label="Breadcrumb"><a href="{% url 'home' %}">Home</a><span aria-hidden="true">/</span><span aria-current="page">{{ title }}</span></nav>
+    <h1 class="wow fadeInUp" data-wow-delay="0.1s">{{ title }}</h1>
+    {% if intro %}<p class="lead wow fadeInUp" data-wow-delay="0.2s">{{ intro }}</p>{% endif %}
+  </div>
+</header>

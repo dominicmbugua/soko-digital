@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load market_extras %}
+{% block title %}Privacy – Soko Digital{% endblock %}
+{% block meta_description %}What personal information Soko Digital collects, why, and the choices you have.{% endblock %}
+
+{% block content %}
+<main id="main">
+  {% include "partials/page_header.html" with title="Privacy" intro="What we collect, why we collect it, and the choices you have. Last updated November 2026." %}
+  <section class="section pt-4">
+    <div class="container">
+      <div class="row gx-xl-5 gy-4">
+        <div class="col-lg-8 prose">
+      <h2 id="what-we-collect">What we collect</h2>
+      <ul>
+        <li><b>Account details:</b> your name, username, email, phone number and location (where you farm or operate).</li>
+        <li><b>Order details:</b> what you list or order, delivery address and notes, and the M-Pesa number and receipt used for payment.</li>
+        <li><b>Messages:</b> anything you send us through the contact form.</li>
+        <li><b>Technical data:</b> a session cookie that keeps you logged in and remembers your cart.</li>
+      </ul>
+
+      <h2 id="how-we-use-it">How we use it</h2>
+      <p>We use your details to run your account, process orders and payments, deliver produce, resolve problems, and reply to you. We do not use them for advertising.</p>
+
+      <h2 id="who-can-see-it">Who can see it</h2>
+      <ul>
+        <li>Buyers see a farmer's name and location on their listings. Farmers see the name of the buyer on their orders.</li>
+        <li>Your delivery address and notes are seen by our operations team so that we can deliver. They are not shown to other users.</li>
+        <li>We do not sell your personal information.</li>
+      </ul>
+
+      <h2 id="third-party-services">Third-party services</h2>
+      <p>Our pages load fonts from Google Fonts and code libraries from jsDelivr, so those services may receive your IP address when a page loads. When live M-Pesa payments start, payment details will also be handled by Safaricom.</p>
+
+      <h2 id="cookies">Cookies</h2>
+      <p>We use only the cookies the site needs to work: one to keep you logged in and one to remember your cart. We do not use advertising or tracking cookies.</p>
+
+      <h2 id="your-choices">Your choices</h2>
+      <p>You can ask to see, correct or delete the personal information we hold about you. We aim to handle personal data in line with Kenya's Data Protection Act, 2019. To make a request, use the <a href="{% url 'contact' %}">contact page</a>.</p>
+
+      <h2 id="changes">Changes</h2>
+      <p>If we change how we use personal information we will update this page and its date.</p>
+        </div>
+        <div class="col-lg-4 d-none d-lg-block">
+          <aside class="photo-stack">
+            <figure class="photo-card big wide" data-p="kale">
+              {% produce_art "kale" "cover" %}
+              <figcaption class="photo-chip">{% icon "shield-check" %}<span>Your details are used to run your orders, nothing else</span></figcaption>
+            </figure>
+            <nav class="jump" aria-label="On this page">
+              <b>On this page</b>
+              <a href="#what-we-collect">What we collect</a>
+              <a href="#how-we-use-it">How we use it</a>
+              <a href="#who-can-see-it">Who can see it</a>
+              <a href="#third-party-services">Third-party services</a>
+              <a href="#cookies">Cookies</a>
+              <a href="#your-choices">Your choices</a>
+              <a href="#changes">Changes</a>
+            </nav>
+            <div class="help-card"><h3>Questions?</h3><p>We are happy to explain anything on this page.</p><div class="btns"><a class="btn btn-primary" href="{% url 'contact' %}">Contact us</a></div></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

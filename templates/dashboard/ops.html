@@ -1,0 +1,55 @@
+{% extends "dashboard/base_dash.html" %}
+{% load humanize market_extras %}
+{% block title %}Operations – Soko Digital{% endblock %}
+{% block rolelabel %}Operations (staff){% endblock %}
+{% block side %}
+  <a href="#overview">{% icon "layout-dashboard" %}Overview</a><a href="#queue">{% icon "truck" %}Delivery queue</a><a href="#disputes">{% icon "triangle-alert" %}Disputes{% if disputes %} <span class="count">{{ disputes|length }}</span>{% endif %}</a>
+  <a href="#produce">{% icon "trending-up" %}Top produce</a><a href="#settled">{% icon "circle-check" %}Recently settled</a>
+  <a class="side-cta" href="/admin/">Open Django admin</a>
+{% endblock %}
+{% block dash %}
+<section id="overview">
+  <h1 class="h2">Operations</h1>
+  <p class="sub">Money is simulated in this demo. Amounts show what the real flow would hold and pay out.</p>
+  <div class="stat-grid">
+    {% include "dashboard/_stat.html" with icon="receipt" label="Orders" value=order_count %}
+    {% include "dashboard/_stat.html" with icon="trending-up" label="Sales (produce)" prefix="KES " value=gmv hint="All paid orders" %}
+    {% include "dashboard/_stat.html" with icon="landmark" label="Our fees" prefix="KES " value=fees hint="From settled orders" %}
+    {% include "dashboard/_stat.html" with icon="lock" label="Funds held" prefix="KES " value=held hint="Paid, not yet released" %}
+    {% include "dashboard/_stat.html" with icon="hand-coins" label="Paid to farmers" prefix="KES " value=paid_out %}
+    {% include "dashboard/_stat.html" with icon="tractor" label="Farmers" value=farmers %}
+    {% include "dashboard/_stat.html" with icon="store" label="Buyers" value=buyers %}
+    {% include "dashboard/_stat.html" with icon="triangle-alert" label="Open disputes" value=disputes|length %}
+  </div>
+  <div class="two-col">
+    <div class="wow fadeInUp panel"><div class="panel-head"><h2 class="h5">Orders per day</h2></div>{% include "dashboard/_bars.html" with series=orders_chart title="Orders per day" unit="" %}</div>
+    <div class="wow fadeInUp panel"><div class="panel-head"><h2 class="h5">Sales per day (KES)</h2></div>{% include "dashboard/_bars.html" with series=sales_chart title="Sales per day" unit="KES " %}</div>
+  </div>
+</section>
+
+<section id="queue">
+  <div class="wow fadeInUp panel"><div class="panel-head"><h2 class="h5">Ready for delivery <span class="count">{{ ready|length }}</span></h2><small class="text-muted">Payment is held. Deliver, then mark delivered.</small></div>
+    {% include "dashboard/_ops_table.html" with orders=ready actions="deliver,refund" %}</div>
+  <div class="wow fadeInUp panel"><div class="panel-head"><h2 class="h5">Delivered, waiting for the buyer <span class="count">{{ delivered|length }}</span></h2></div>
+    {% include "dashboard/_ops_table.html" with orders=delivered actions="" %}</div>
+  <div class="wow fadeInUp panel"><div class="panel-head"><h2 class="h5">Awaiting payment <span class="count">{{ unpaid|length }}</span></h2><small class="text-muted">Cancelling returns the stock to the listing.</small></div>
+    {% include "dashboard/_ops_table.html" with orders=unpaid actions="cancel" %}</div>
+</section>
+
+<section id="disputes" class="wow fadeInUp panel">
+  <div class="panel-head"><h2 class="h5">Disputes <span class="count">{{ disputes|length }}</span></h2><small class="text-muted">Review the buyer's report, then pay the farmer or refund the buyer.</small></div>
+  {% include "dashboard/_ops_table.html" with orders=disputes actions="release,refund" %}
+</section>
+
+<section id="produce" class="wow fadeInUp panel">
+  <div class="panel-head"><h2 class="h5">Top produce by sales</h2></div>
+  <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Produce</th><th class="text-end">Orders</th><th class="text-end">kg</th><th class="text-end">Sales (KES)</th></tr></thead><tbody>
+  {% for t in top %}<tr><td>{{ t.listing__produce__name }}</td><td class="text-end">{{ t.n }}</td><td class="text-end">{{ t.kg|intcomma }}</td><td class="text-end">{{ t.value|intcomma }}</td></tr>
+  {% empty %}<tr><td colspan="4" class="empty">No paid orders yet.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+
+<section id="settled" class="wow fadeInUp panel">
+  <div class="panel-head"><h2 class="h5">Recently settled</h2></div>
+  {% include "dashboard/_ops_table.html" with orders=recent_settled actions="" %}
+</section>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static market_extras humanize %}
+{% block title %}How it works – Soko Digital{% endblock %}
+{% block meta_description %}Step-by-step guides for buyers and farmers, a worked example of where the money goes, and what happens if something goes wrong.{% endblock %}
+
+{% block content %}
+<main id="main">
+  {% include "partials/page_header.html" with title="How it works" intro="From a farmer's listing to money in their pocket, with your payment protected at every step." %}
+
+  <section class="section pt-4">
+    <div class="container">
+      <div class="seg wow fadeInUp" role="tablist" aria-label="Choose your guide">
+        <button class="seg-btn active" id="tab-buyers" data-bs-toggle="tab" data-bs-target="#pane-buyers" type="button" role="tab" aria-controls="pane-buyers" aria-selected="true">{% icon "store" %}I'm a buyer</button>
+        <button class="seg-btn" id="tab-farmers" data-bs-toggle="tab" data-bs-target="#pane-farmers" type="button" role="tab" aria-controls="pane-farmers" aria-selected="false">{% icon "tractor" %}I'm a farmer</button>
+      </div>
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="pane-buyers" role="tabpanel" aria-labelledby="tab-buyers" tabindex="0">
+          <div class="row gx-xl-5 gy-4">
+            <div class="col-lg-7">
+              <ol class="guide">
+            <li><span class="g-ico">{% icon "shopping-basket" %}</span><div><h3>Browse and add to cart</h3><p>Look through the <a href="{% url 'market' %}">marketplace</a> and add produce to your cart. You do not need an account to browse. Pick the kilograms you want from each farmer.</p></div></li>
+            <li><span class="g-ico">{% icon "users" %}</span><div><h3>Register as a buyer and check out</h3><p>Give your delivery address, any notes for the driver, and the M-Pesa number that will pay. You can order from several farmers in one checkout.</p></div></li>
+            <li><span class="g-ico">{% icon "lock" %}</span><div><h3>Pay by M-Pesa. Your money is held.</h3><p>One payment covers your whole cart. The money goes to a holding account. It is not sent to the farmer yet.</p></div></li>
+            <li><span class="g-ico">{% icon "truck" %}</span><div><h3>We collect, grade and deliver</h3><p>Each farmer's produce is weighed and graded at the collection point, then delivered to you in Nairobi.</p></div></li>
+            <li><span class="g-ico">{% icon "circle-check" %}</span><div><h3>Confirm delivery, or report a problem</h3><p>Check your order, then confirm it from your dashboard. Only then is the farmer paid. If something is wrong, report it instead.</p></div></li>
+          </ol>
+              <div class="guide-cta"><a class="btn btn-primary" href="{% url 'market' %}">Browse produce {% icon "arrow-right" %}</a><a class="btn btn-outline-dark" href="{% url 'register' %}">Create a buyer account</a></div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+            <div class="photo-stack">
+              <figure class="photo-card big" data-p="onions">
+                {% produce_art "onions" "cover" %}
+                <figcaption class="photo-chip">{% icon "lock" %}<span>Your payment is held until you confirm delivery</span></figcaption>
+              </figure>
+              <div class="photo-row">
+                <figure class="photo-card" data-p="tomatoes">{% produce_art "tomatoes" "cover" %}</figure>
+                <figure class="photo-card" data-p="bananas">{% produce_art "bananas" "cover" %}</figure>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="pane-farmers" role="tabpanel" aria-labelledby="tab-farmers" tabindex="0">
+          <div class="row gx-xl-5 gy-4">
+            <div class="col-lg-7">
+              <ol class="guide">
+            <li><span class="g-ico">{% icon "users" %}</span><div><h3>Register as a farmer</h3><p>Sign up with your name and the M-Pesa number you want to be paid on. It is free to register.</p></div></li>
+            <li><span class="g-ico">{% icon "clipboard-check" %}</span><div><h3>Post a listing</h3><p>Choose the produce, how many kilograms you have (at least 10), your grade estimate and your price per kilogram. We show the usual range so you can see where you stand.</p></div></li>
+            <li><span class="g-ico">{% icon "package" %}</span><div><h3>Bring it to the collection point</h3><p>Your produce is weighed and graded before it travels. You can edit, pause or delete a listing any time from your dashboard.</p></div></li>
+            <li><span class="g-ico">{% icon "truck" %}</span><div><h3>We deliver it</h3><p>When a buyer orders, we deliver your produce to them in Nairobi. You do not have to arrange transport.</p></div></li>
+            <li><span class="g-ico">{% icon "hand-coins" %}</span><div><h3>Get paid</h3><p>Once the buyer confirms delivery, you receive your price minus our {{ site.fee }}% fee. Your dashboard shows what is paid and what is still on its way.</p></div></li>
+          </ol>
+              <div class="guide-cta"><a class="btn btn-primary" href="{% url 'sell' %}">Start selling {% icon "arrow-right" %}</a><a class="btn btn-outline-dark" href="{% url 'register' %}">Create a farmer account</a></div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+            <div class="photo-stack">
+              <figure class="photo-card big" data-p="maize">
+                {% produce_art "maize" "cover" %}
+                <figcaption class="photo-chip">{% icon "wallet" %}<span>You set the price. You get paid after the buyer confirms</span></figcaption>
+              </figure>
+              <div class="photo-row">
+                <figure class="photo-card" data-p="kale">{% produce_art "kale" "cover" %}</figure>
+                <figure class="photo-card" data-p="beans">{% produce_art "beans" "cover" %}</figure>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band section" id="money">
+    <div class="container">
+      <div class="row gy-5 gx-lg-5 align-items-center">
+        <div class="col-lg-5 wow fadeInLeft">
+          <h2>Where the money goes</h2>
+          <p class="mt-3">A simple example: a buyer orders {{ example.qty }} kg of produce at KES {{ example.price }} per kg. The real totals are always shown at checkout before you pay.</p>
+          <p class="mb-0 text-muted small">Delivery is charged separately at KES {{ site.delivery }} per kg. Our {{ site.fee }}% fee is taken from the farmer's price, only when the farmer is paid.</p>
+        </div>
+        <div class="col-lg-7 wow fadeInRight" data-wow-delay="0.15s">
+          <div class="money">
+            <div class="money-col">
+              <h3>The buyer pays</h3>
+              <dl>
+                <div><dt>Produce ({{ example.qty }} kg × KES {{ example.price }})</dt><dd>KES {{ example.value|intcomma }}</dd></div>
+                <div><dt>Delivery ({{ example.qty }} kg × KES {{ site.delivery }})</dt><dd>KES {{ example.delivery|intcomma }}</dd></div>
+                <div class="total"><dt>Total</dt><dd>KES {{ example.total|intcomma }}</dd></div>
+              </dl>
+            </div>
+            <div class="money-col">
+              <h3>The farmer receives</h3>
+              <dl>
+                <div><dt>Price of produce</dt><dd>KES {{ example.value|intcomma }}</dd></div>
+                <div><dt>Soko Digital fee ({{ site.fee }}%)</dt><dd>− KES {{ example.fee|intcomma }}</dd></div>
+                <div class="total"><dt>Paid to the farmer</dt><dd>KES {{ example.payout|intcomma }}</dd></div>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="status">
+    <div class="container">
+      <div class="section-head wow fadeInUp">
+        <h2>Follow every order</h2>
+        <p class="mb-0">Each order moves through the same four steps, and you can see where it is in your dashboard.</p>
+      </div>
+      <ol class="timeline wow fadeInUp" data-wow-delay="0.1s">
+        <li><span class="t-dot">1</span><b>Ordered</b><span>The order is created and waiting for payment.</span></li>
+        <li><span class="t-dot">2</span><b>Paid, held</b><span>The buyer has paid. The money is held safely.</span></li>
+        <li><span class="t-dot">3</span><b>Delivered</b><span>The produce has reached the buyer.</span></li>
+        <li><span class="t-dot">4</span><b>Confirmed</b><span>The buyer confirms and the farmer is paid.</span></li>
+      </ol>
+
+      <div class="note-strip warn wow fadeInUp">
+        <span class="ns-ico">{% icon "circle-alert" %}</span>
+        <div>
+          <b>If something goes wrong</b>
+          <p>A buyer can report a problem with an order instead of confirming it. Nothing is paid out while it is open. Our team looks into it, then either releases the payment to the farmer or refunds the buyer. Read more in the <a href="{% url 'faq' %}">FAQ</a> or <a href="{% url 'contact' %}">contact us</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="container wow fadeInUp">
+      <h2>Still have questions?</h2>
+      <p>We have answered the common ones, and we are happy to answer the rest.</p>
+      <div class="d-flex flex-wrap gap-2 justify-content-center">
+        <a class="btn btn-light btn-lg" href="{% url 'faq' %}">Read the FAQ</a>
+        <a class="btn btn-outline-light btn-lg" href="{% url 'contact' %}">Contact us</a>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

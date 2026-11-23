@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load market_extras %}
+{% block title %}Terms of use – Soko Digital{% endblock %}
+{% block meta_description %}The plain-language terms for using Soko Digital as a farmer or a buyer.{% endblock %}
+
+{% block content %}
+<main id="main">
+  {% include "partials/page_header.html" with title="Terms of use" intro="Plain-language terms for farmers and buyers using Soko Digital during our pilot. Last updated November 2026." %}
+  <section class="section pt-4">
+    <div class="container">
+      <div class="row gx-xl-5 gy-4">
+        <div class="col-lg-8 prose">
+      <h2 id="using-soko-digital">1. Using Soko Digital</h2>
+      <p>Soko Digital is an online marketplace. Farmers list produce, businesses order it, and we collect, grade and deliver it. By creating an account or placing an order you agree to these terms.</p>
+
+      <h2 id="your-account">2. Your account</h2>
+      <p>Give accurate details, including a phone number that is yours for M-Pesa. Keep your password private. You are responsible for what happens under your account.</p>
+
+      <h2 id="listings-for-farmers">3. Listings (for farmers)</h2>
+      <p>You set your own price. Make sure the produce, quantity, grade estimate and location you give are true. Bring the produce to the collection point so it can be weighed and graded. If it does not match the listing, the order may be changed or cancelled.</p>
+
+      <h2 id="orders-and-payment-for-buyers">4. Orders and payment (for buyers)</h2>
+      <p>You pay the price of the produce plus delivery (KES {{ site.delivery }} per kilogram). Your payment is held when you order and is released to the farmer only after you confirm delivery. At the moment payments are simulated while we finish connecting live M-Pesa, so no real money moves.</p>
+
+      <h2 id="our-fee">5. Our fee</h2>
+      <p>We take a {{ site.fee }}% fee from the farmer's price, only when the farmer is paid. Buyers are not charged a fee on top of produce and delivery.</p>
+
+      <h2 id="problems-and-refunds">6. Problems and refunds</h2>
+      <p>If an order is not right, the buyer can report a problem instead of confirming it. While a report is open nothing is paid out. Our team reviews it and either releases the payment to the farmer or refunds the buyer. Our decision on a reported order is final for that order.</p>
+
+      <h2 id="fair-use">7. Fair use</h2>
+      <p>Do not post false listings, misuse the service, or try to avoid paying or being paid through the platform for orders that began here.</p>
+
+      <h2 id="changes">8. Changes</h2>
+      <p>We may update these terms as the pilot grows. The date at the top shows when they last changed. If you keep using Soko Digital after a change, you accept the new terms.</p>
+
+      <h2 id="contact">9. Contact</h2>
+      <p>Questions about these terms? Use the <a href="{% url 'contact' %}">contact page</a>.</p>
+        </div>
+        <div class="col-lg-4 d-none d-lg-block">
+          <aside class="photo-stack">
+            <figure class="photo-card big wide" data-p="potatoes">
+              {% produce_art "potatoes" "cover" %}
+              <figcaption class="photo-chip">{% icon "file-text" %}<span>Plain terms for farmers and buyers</span></figcaption>
+            </figure>
+            <nav class="jump" aria-label="On this page">
+              <b>On this page</b>
+              <a href="#using-soko-digital">Using Soko Digital</a>
+              <a href="#your-account">Your account</a>
+              <a href="#listings-for-farmers">Listings (for farmers)</a>
+              <a href="#orders-and-payment-for-buyers">Orders and payment (for buyers)</a>
+              <a href="#our-fee">Our fee</a>
+              <a href="#problems-and-refunds">Problems and refunds</a>
+              <a href="#fair-use">Fair use</a>
+              <a href="#changes">Changes</a>
+              <a href="#contact">Contact</a>
+            </nav>
+            <div class="help-card"><h3>Questions?</h3><p>We are happy to explain anything on this page.</p><div class="btns"><a class="btn btn-primary" href="{% url 'contact' %}">Contact us</a></div></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

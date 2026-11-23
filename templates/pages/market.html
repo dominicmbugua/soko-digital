@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load static market_extras %}
+{% block title %}Marketplace – Soko Digital{% endblock %}
+{% block meta_description %}Browse fresh produce listed directly by farmers on the Molo, Nakuru and Nairobi route. Payment is held until you confirm delivery.{% endblock %}
+
+{% block content %}
+<main id="main">
+  {% include "partials/page_header.html" with title="Marketplace" intro="Fresh produce listed directly by farmers. Prices are set by the farmer, with the usual range shown beside them." %}
+  <section class="section pt-4">
+    <div class="container">
+      <p class="count-line" id="count" aria-live="polite">Loading listings…</p>
+      <div class="chips wow fadeInUp" id="chips" role="group" aria-label="Filter by produce">
+        <button type="button" class="chip-btn on" data-filter="all" aria-pressed="true">All produce</button>
+        {% for p in produce %}<button type="button" class="chip-btn" data-filter="{{ p.slug }}" aria-pressed="false">{% produce_art p.slug "xs" %}{{ p.name }}</button>{% endfor %}
+      </div>
+      <div id="buy-msg" class="alert d-none" role="status"></div>
+      <div class="row g-4" id="listings" aria-live="polite"></div>
+
+      <aside class="note-strip wow fadeInUp">
+        <span class="ns-ico">{% icon "shield-check" %}</span>
+        <div>
+          <b>Your payment is protected</b>
+          <p>When you order, your money is held. It is only released to the farmer after you confirm the delivery. <a href="{% url 'how_it_works' %}">See how it works</a>.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{{ boot|json_script:"boot-data" }}
+<script src="{% static 'js/main.js' %}"></script>
+{% endblock %}

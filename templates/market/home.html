@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static market_extras %}
+
+{% block content %}
+<main id="main">
+  <section class="hero">
+    <div class="container">
+      <div class="row gy-5 gx-lg-5 align-items-center">
+        <div class="col-lg-6 hero-copy">
+          <p class="route wow fadeInLeft" data-wow-delay="0.1s">{% icon "map-pin" %} Pilot route: Molo and Nakuru to Nairobi</p>
+          <h1 class="wow fadeInLeft" data-wow-delay="0.25s">Farm-fresh produce, paid for when it arrives.</h1>
+          <p class="lead wow fadeInLeft" data-wow-delay="0.4s">Farmers list what they have and set their own price. Restaurants, caterers, schools and vendors order it. We collect, grade and deliver, and the money is held until the buyer confirms.</p>
+          <div class="hero-cta wow fadeInLeft" data-wow-delay="0.55s">
+            <a class="btn btn-primary btn-lg" href="{% url 'market' %}">Browse produce {% icon "arrow-right" %}</a>
+            <a class="btn btn-outline-dark btn-lg" href="{% url 'sell' %}">List your produce</a>
+          </div>
+          <ul class="facts">
+            <li class="wow fadeInUp" data-wow-delay="0.7s">{% icon "lock" %}<div><b>Payment held</b><span>Released after you confirm</span></div></li>
+            <li class="wow fadeInUp" data-wow-delay="0.85s">{% icon "banknote" %}<div><b>{{ site.fee }}% fee</b><span>Only when the farmer is paid</span></div></li>
+            <li class="wow fadeInUp" data-wow-delay="1s">{% icon "truck" %}<div><b>KES {{ site.delivery }} per kg</b><span>Delivery to Nairobi</span></div></li>
+          </ul>
+        </div>
+        <div class="col-lg-6">
+          <div class="stall wow fadeIn" data-wow-delay="0.2s" data-wow-duration="1s">
+            <div class="stall-head">
+              <h2>Reference prices today</h2>
+              <span>KES per kg</span>
+            </div>
+            <div class="stall-grid" id="stall">
+              {% for p in produce %}
+              <a class="stall-tile wow fadeInUp" data-p="{{ p.slug }}" href="{% url 'market' %}?produce={{ p.slug }}" style="--i:{{ forloop.counter0 }}">
+                {% produce_art p.slug %}
+                <span class="nm">{{ p.name }}</span>
+                <span class="pr">{{ p.ref_min }}–{{ p.ref_max }}</span>
+              </a>
+              {% endfor %}
+            </div>
+            <p class="stall-note">A guide for farmers and buyers. Farmers set the actual price. Tap any produce to see what's listed.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band section" id="fresh">
+    <div class="container">
+      <div class="section-head split wow fadeInUp">
+        <div>
+          <h2>Fresh from the farm</h2>
+          <p class="mb-0">The latest listings from farmers on the Molo, Nakuru and Nairobi route.</p>
+        </div>
+        <a class="btn btn-outline-dark" href="{% url 'market' %}">See all produce {% icon "arrow-right" %}</a>
+      </div>
+      <div class="row g-4" id="listings" data-limit="4" data-cols="col-sm-6 col-xl-3" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="section" id="audience">
+    <div class="container">
+      <div class="section-head wow fadeInUp">
+        <h2>Built for both sides of the deal</h2>
+        <p class="mb-0">Whether you grow it or buy it, the process is simple and the payment is protected.</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-6 wow fadeInLeft" data-wow-delay="0.1s">
+          <article class="audience">
+            <div class="aud-photo">{% produce_art "maize" "cover" %}</div>
+            <div class="aud-body">
+              <h3>For farmers</h3>
+              <ul class="ticks">
+                <li>{% icon "badge-check" %}Set your own price, with the usual range beside it</li>
+                <li>{% icon "scale" %}We weigh and grade your produce at the collection point</li>
+                <li>{% icon "wallet" %}Get paid once the buyer confirms, minus a {{ site.fee }}% fee</li>
+              </ul>
+              <a class="btn btn-primary" href="{% url 'sell' %}">Start selling {% icon "arrow-right" %}</a>
+            </div>
+          </article>
+        </div>
+        <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.2s">
+          <article class="audience">
+            <div class="aud-photo">{% produce_art "onions" "cover" %}</div>
+            <div class="aud-body">
+              <h3>For restaurants, caterers and vendors</h3>
+              <ul class="ticks">
+                <li>{% icon "store" %}Order from several farmers in one checkout</li>
+                <li>{% icon "lock" %}Your payment is held until you confirm delivery</li>
+                <li>{% icon "truck" %}Delivered to Nairobi at KES {{ site.delivery }} per kg</li>
+              </ul>
+              <a class="btn btn-primary" href="{% url 'market' %}">Browse produce {% icon "arrow-right" %}</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-band section" id="how">
+    <div class="container">
+      <div class="section-head split on-dark wow fadeInUp">
+        <div>
+          <h2>How your money moves</h2>
+          <p class="mb-0">Payment is held until the buyer confirms the delivery.</p>
+        </div>
+        <a class="btn btn-light" href="{% url 'how_it_works' %}">Read the full guide {% icon "arrow-right" %}</a>
+      </div>
+      <ol class="how-steps">
+        <li class="wow fadeInUp" data-wow-delay="0.1s">
+          <span class="how-ico">{% icon "sprout" %}</span>
+          <h3>A farmer lists the harvest</h3>
+          <p>They set their own price per kilogram, with the usual range beside it.</p>
+        </li>
+        <li class="wow fadeInUp" data-wow-delay="0.3s">
+          <span class="how-ico">{% icon "smartphone" %}</span>
+          <h3>The buyer orders and pays</h3>
+          <p>By M-Pesa when ordering. The money goes to a holding account, not to us or the farmer.</p>
+        </li>
+        <li class="wow fadeInUp" data-wow-delay="0.5s">
+          <span class="how-ico">{% icon "truck" %}</span>
+          <h3>We collect, grade and deliver</h3>
+          <p>Produce is weighed and graded at the collection point, then delivered to Nairobi.</p>
+        </li>
+        <li class="wow fadeInUp" data-wow-delay="0.7s">
+          <span class="how-ico">{% icon "hand-coins" %}</span>
+          <h3>The buyer confirms, the farmer is paid</h3>
+          <p>The farmer gets the price minus our {{ site.fee }}% fee. If there is a problem, our team reviews it before any money is released.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band section" id="route">
+    <div class="container">
+      <div class="section-head center wow fadeInUp">
+        <h2>One route, done well</h2>
+        <p class="mb-0">We are starting small: one route, eight kinds of produce, and a team that handles every order.</p>
+      </div>
+      <div class="route-line wow fadeInUp" data-wow-delay="0.15s">
+        <div class="stop"><span class="dot"></span><b>Molo</b><span>Farms and a collection point</span></div>
+        <div class="stop"><span class="dot"></span><b>Nakuru</b><span>Farms and a collection point</span></div>
+        <div class="stop end"><span class="dot"></span><b>Nairobi</b><span>Delivered to your door</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="container wow fadeInUp">
+      <h2>Ready to trade fresh?</h2>
+      <p>Create a free account as a farmer or a buyer. It takes a couple of minutes.</p>
+      <div class="d-flex flex-wrap gap-2 justify-content-center">
+        <a class="btn btn-light btn-lg" href="{% url 'register' %}">Create an account</a>
+        <a class="btn btn-outline-light btn-lg" href="{% url 'contact' %}">Talk to us</a>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{{ boot|json_script:"boot-data" }}
+<script src="{% static 'js/main.js' %}"></script>
+{% endblock %}

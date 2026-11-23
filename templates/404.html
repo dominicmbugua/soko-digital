@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load market_extras %}
+{% block title %}Page not found – Soko Digital{% endblock %}
+{% block content %}
+<main id="main" class="notfound">
+  <div class="container">
+    <div class="nf-art" aria-hidden="true">{% produce_art "tomatoes" "lg" %}</div>
+    <p class="nf-code">404</p>
+    <h1>We could not find that page</h1>
+    <p class="lead">It may have moved, or the link may be wrong. Here are some good places to go next.</p>
+    <div class="d-flex flex-wrap gap-2 justify-content-center">
+      <a class="btn btn-primary btn-lg" href="{% url 'market' %}">Browse produce {% icon "arrow-right" %}</a>
+      <a class="btn btn-outline-dark btn-lg" href="{% url 'home' %}">Go home</a>
+      <a class="btn btn-outline-dark btn-lg" href="{% url 'contact' %}">Contact us</a>
+    </div>
+  </div>
+</main>
+{% endblock %}
