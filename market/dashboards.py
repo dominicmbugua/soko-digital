@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from . import services
 from .forms import ListingEditForm
-from .models import Listing, Order, Profile
+from .models import Listing, Order, Payment, Profile
 from .utils import fee_for, role_of
 
 S = Order.Status
@@ -164,6 +164,7 @@ def ops_dashboard(request):
     top = (paid.values("listing__produce__name").annotate(value=Sum("produce_value"), kg=Sum("qty_kg"), n=Count("id"))
            .order_by("-value")[:5])
     held = orders.filter(status__in=(S.PAYMENT_HELD, S.DELIVERED, S.DISPUTED))
+    received = Payment.objects.filter(status__in=(Payment.Status.SUCCESS, Payment.Status.NEEDS_REVIEW), simulated=False)
     return render(request, "dashboard/ops.html", {
         "order_count": orders.count(),
         "gmv": total(paid, "produce_value"),
@@ -177,6 +178,10 @@ def ops_dashboard(request):
         "orders_chart": daily_series(((timezone.localtime(o.created).date(), 1) for o in recent)),
         "sales_chart": daily_series(((timezone.localtime(o.created).date(), o.produce_value) for o in recent.filter(status__in=PAID))),
         "top": top,
+        # Where the money was received: real M-Pesa payments only (simulated ones are not money).
+        "mpesa_received": total(received, "amount"),
+        "mpesa_review": Payment.objects.filter(status=Payment.Status.NEEDS_REVIEW).count(),
+        "payments": Payment.objects.select_related("checkout__buyer")[:15],
     })
 
 

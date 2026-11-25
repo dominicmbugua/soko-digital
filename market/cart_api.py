@@ -1,14 +1,19 @@
 """Cart + checkout JSON API."""
+import hmac
+import json
+from datetime import timedelta
+
 from django.db import transaction
 from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from . import payments
 from .api import ApiError, api_endpoint, as_int, json_body, need_role
 from .cart import Cart
-from .models import Checkout, Listing, Order
+from .models import Checkout, Listing, Order, Payment
 from .utils import normalise_phone, role_of
 from django.conf import settings
 
@@ -100,25 +105,86 @@ def checkout_create(request):
                          "done": reverse("checkout_done", args=[checkout.id])}, status=201)
 
 
+def _pay_json(checkout, payment):
+    """What the browser needs to know about one payment attempt."""
+    return {"status": payment.status.lower(), "message": payments.message_for(payment), "paymentId": payment.id,
+            "ref": checkout.ref, "receipt": payment.receipt, "paidTo": payment.paid_to,
+            "simulated": payment.simulated, "done": reverse("checkout_done", args=[checkout.id])}
+
+
 @api_endpoint
 @require_POST
 def checkout_pay(request, checkout_id):
+    """Start paying. Real mode: send the M-Pesa PIN prompt to the buyer's phone and answer 202 (pending);
+    the browser then polls checkout_status. Simulated mode: pay at once and answer 200."""
     need_role(request, "buyer")
+    data = json_body(request)
+    phone = None
+    if data.get("phone"):
+        phone = normalise_phone(str(data["phone"]))
+        if not phone:
+            raise ApiError("Enter a Safaricom number like 0712345678.")
+
     with transaction.atomic():
         checkout = Checkout.objects.select_for_update().filter(pk=checkout_id, buyer=request.user).first()
         if not checkout:
             raise ApiError("Checkout not found.", 404)
         if checkout.is_paid:
             raise ApiError("This checkout is already paid.", 409)
-        orders = list(checkout.orders.select_for_update().filter(status=Order.Status.AWAITING_PAYMENT))
-        if not orders:
+        if not checkout.orders.filter(status=Order.Status.AWAITING_PAYMENT).exists():
             raise ApiError("Nothing left to pay. These orders may have been cancelled.", 409)
+        if checkout.payments.filter(status=Payment.Status.NEEDS_REVIEW).exists():
+            raise ApiError("We already received a payment for this order and are checking it. Please don't pay again.", 409)
+        # A prompt is already open on the buyer's phone: pick that one up instead of sending a second one.
+        fresh = timezone.now() - timedelta(seconds=settings.MPESA_PROMPT_TIMEOUT)
+        open_prompt = checkout.payments.filter(status=Payment.Status.PENDING, created__gte=fresh).first()
+        if open_prompt:
+            return JsonResponse(_pay_json(checkout, open_prompt), status=202)
+        if phone and phone != checkout.phone:           # the buyer chose a different number to pay with
+            checkout.phone = phone
+            checkout.save(update_fields=["phone"])
+            checkout.orders.update(phone=phone)
+        payment = Payment.objects.create(checkout=checkout, phone=checkout.phone, amount=checkout.total,
+                                         paid_to=payments.receiving_account(), simulated=payments.simulated())
+
+    # Talk to M-Pesa outside the transaction so the database isn't locked while we wait on Safaricom.
+    if payment.simulated:
         ok, receipt = payments.collect_payment(checkout)
-        if not ok:
-            raise ApiError("Payment was not completed. You can try again.", 402)
-        for o in orders:
-            o.status, o.mpesa_receipt = Order.Status.PAYMENT_HELD, receipt
-            o.save()
-        checkout.mpesa_receipt, checkout.paid_at = receipt, timezone.now()
-        checkout.save()
-    return JsonResponse({"ref": checkout.ref, "receipt": receipt, "done": reverse("checkout_done", args=[checkout.id])})
+        payment = payments.finish_payment(payment.pk, result_code=0 if ok else -1, receipt=receipt, desc="Simulated")
+        return JsonResponse(_pay_json(checkout, payment))
+    try:
+        payments.send_stk_push(payment)
+    except payments.PaymentError as e:
+        payments.finish_payment(payment.pk, result_code=-1, desc=str(e))
+        raise ApiError(str(e), 502)
+    payment.refresh_from_db()
+    return JsonResponse(_pay_json(checkout, payment), status=202)
+
+
+@api_endpoint
+@require_GET
+def checkout_status(request, checkout_id):
+    """The browser polls this while the PIN prompt is open."""
+    need_role(request, "buyer")
+    checkout = Checkout.objects.filter(pk=checkout_id, buyer=request.user).first()
+    if not checkout:
+        raise ApiError("Checkout not found.", 404)
+    payment = checkout.payments.first()
+    if not payment:
+        return JsonResponse({"status": "none", "message": "", "done": reverse("checkout_done", args=[checkout.id])})
+    return JsonResponse(_pay_json(checkout, payments.refresh_pending(payment)))
+
+
+@csrf_exempt
+@require_POST
+def mpesa_callback(request, token):
+    """Safaricom calls this when the buyer finishes (or abandons) the prompt. There is no login or CSRF here,
+    so the secret in the URL is the lock, and the payment is matched by Safaricom's own request id."""
+    if not settings.MPESA_CALLBACK_TOKEN or not hmac.compare_digest(token, settings.MPESA_CALLBACK_TOKEN):
+        return JsonResponse({"ResultCode": 1, "ResultDesc": "Rejected"}, status=404)
+    try:
+        body = json.loads(request.body or b"{}")
+    except (ValueError, UnicodeDecodeError):
+        body = None
+    payments.handle_callback(body)
+    return JsonResponse({"ResultCode": 0, "ResultDesc": "Accepted"})   # always thank Safaricom, so it stops retrying

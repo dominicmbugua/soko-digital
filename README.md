@@ -1,7 +1,7 @@
 # Soko Digital (Django)
 
 Marketplace connecting Kenyan farmers with business buyers. Payment is held until delivery is confirmed.
-Payments are **simulated** for now (no real M-Pesa yet).
+Payments are **simulated** until you add your Safaricom keys (see *Going live with M-Pesa* below), then they use real M-Pesa STK Push.
 
 ## Run it
 ```bash
@@ -54,7 +54,7 @@ or type them straight into `config/settings.py`. Run `python manage.py migrate` 
 1. **Browse and add to cart** (works before login). Pick kilograms on a listing card, then **Add to cart**. The cart lives in the session and survives login.
 2. **Cart drawer** (basket icon in the navbar): change kilograms, remove items, see produce + delivery (KES 6/kg) + total.
 3. **Checkout** (`/checkout/`, buyers only): delivery address, notes and M-Pesa number. Guests are sent to log in or register and come back here.
-4. **Pay**: one simulated M-Pesa payment for the whole cart. Stock is locked and checked first, so nothing is oversold and no half-orders are created.
+4. **Pay**: one M-Pesa payment for the whole cart (a PIN prompt on the buyer's phone; see below). Stock is locked and checked first, so nothing is oversold and no half-orders are created.
 5. **Confirmation** (`/checkout/<id>/done/`): receipt, order list, what happens next. If payment failed, a "Pay now" button retries it.
 A checkout creates one order per listing (so each farmer is tracked and paid separately). Ops sees the delivery address in the queue.
 Code: `market/cart.py`, `market/cart_api.py`, `static/js/cart.js`, `static/js/checkout.js`, `templates/shop/`.
@@ -77,17 +77,47 @@ Order statuses now also include `REFUNDED` and `CANCELLED`; both return the stoc
 | Register / login | `market/views.py`, `market/forms.py`, `templates/registration/` |
 | Dashboards | `market/dashboards.py`, `market/services.py`, `templates/dashboard/`, `static/js/dashboard.js` |
 | JSON API (all price, fee and status logic) | `market/api.py` |
-| Payment gateway (simulated; swap for Daraja later) | `market/payments.py` |
+| M-Pesa (STK Push, callback, status check; simulated until keys are set) | `market/payments.py`, `market/cart_api.py` |
 | Front-end talking to the API | `static/js/main.js` |
 | Demo data | `market/management/commands/seed_demo.py` |
 | Tests (`python manage.py test`) | `market/tests.py` |
+
+## Going live with M-Pesa (STK Push)
+**What the buyer sees:** at the last step they confirm the number to pay with, press *Pay*, and get an M-Pesa PIN prompt on that phone. The page shows "Check your phone" and waits. When the buyer enters the PIN, the orders become *Payment held* and they land on the confirmation page with the M-Pesa receipt. If they cancel, enter a wrong PIN or it times out, they see why and can try again (or pay with another number). A buyer can also finish later from *Buyer dashboard > Pay now*.
+
+**Where the money is received:** on the Paybill or Till you set in `MPESA_SHORTCODE` (and `MPESA_PARTY_B` for a Till). It is shown to the buyer at checkout and on the pay prompt, and every attempt is saved as a **Payment** (phone, amount, receipt, which Paybill/Till, how it ended). Ops sees them in `/dashboard/ops/` (*Received via M-Pesa* and the *M-Pesa payments* table) and in **Admin > Payments**.
+
+**Set up (sandbox first):**
+1. Create an app at developer.safaricom.co.ke and copy its Consumer Key and Secret, the test shortcode and passkey.
+2. Start a tunnel so Safaricom can reach you: `ngrok http 8000`. Then uncomment the ngrok lines at the bottom of the settings `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` and use your own ngrok host.
+3. Set the variables (Windows `set NAME=value`, macOS/Linux `export NAME=value`) and restart the server:
+```
+MPESA_ENV=sandbox
+MPESA_CONSUMER_KEY=...
+MPESA_CONSUMER_SECRET=...
+MPESA_SHORTCODE=...                  # the Paybill (or Till store number) that receives the money
+MPESA_PASSKEY=...
+MPESA_CALLBACK_BASE_URL=https://your-name.ngrok-free.app
+MPESA_CALLBACK_TOKEN=<a long random string>      # e.g. python -c "import secrets; print(secrets.token_urlsafe(32))"
+# Till instead of Paybill:  MPESA_TRANSACTION_TYPE=CustomerBuyGoodsOnline  and  MPESA_PARTY_B=<till number>
+```
+4. `python manage.py migrate` (adds the Payment table), then check out. If any required variable is missing, the site stays in simulated mode (the footer and checkout say so).
+5. For production use `MPESA_ENV=production` with your real shortcode, passkey and keys, `DEBUG=False`, and an https domain.
+
+**How it stays safe:**
+- The browser never says what was paid. Safaricom tells our server on `/api/mpesa/callback/<MPESA_CALLBACK_TOKEN>/`; the secret in the URL keeps strangers out, and a callback is matched to a payment by Safaricom's own request id.
+- Orders are only released if the amount matches. A wrong amount, a double payment, or money arriving for orders ops already cancelled is marked **Needs review** and is *not* released; refund those from M-Pesa by hand.
+- If the callback is late or lost, the status poll asks Safaricom directly. If the buyer never answers, it gives up after 2 minutes (`MPESA_PROMPT_TIMEOUT`), but money that arrives later is still recorded.
+- Only one prompt is open per checkout at a time, so a double-click cannot charge twice.
+
+**Check before launch:** run a real KES 1 test on production and confirm the Payment row, the receipt and the money in your Paybill/Till. The sandbox does not move real money.
 
 ## Order flow (enforced on the server)
 `AWAITING_PAYMENT` -> `PAYMENT_HELD` -> `DELIVERED` -> `SETTLED` (farmer paid price minus 8%) or `DISPUTED`.
 Steps can't be skipped or repeated. Stock is locked while an order is created so it can't be oversold.
 
 ## Known gaps / next steps
-1. Real M-Pesa: implement STK Push + callback URL in `payments.py` (Daraja sandbox). The callback needs a public URL (ngrok).
+1. Real M-Pesa is built; it needs your Daraja keys and a public callback URL (see *Going live with M-Pesa*). Real payouts to farmers (B2C) are still not built.
 2. Unpaid orders keep stock reserved until ops cancels them. Add an automatic expiry later.
 3. Delivery: with `DEMO_MODE = True` the website marks orders delivered. For real use set it to `False`; the delivery team uses the admin action "Mark selected orders as delivered".
 4. Real escrow/payout (B2C to the farmer) needs a holding-account arrangement. Out of scope for the demo.

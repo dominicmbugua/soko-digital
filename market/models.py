@@ -96,6 +96,44 @@ class Checkout(models.Model):
         return self.produce_value + self.delivery_fee
 
 
+class Payment(models.Model):
+    """One M-Pesa STK Push attempt for a checkout. A checkout can have several (e.g. a cancelled prompt, then a retry).
+
+    This table is also the record of where the money was received: `paid_to` is the Paybill/Till
+    that was charged, and `receipt` is the M-Pesa confirmation code Safaricom sends back.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Waiting for the buyer's PIN"
+        SUCCESS = "SUCCESS", "Received"
+        FAILED = "FAILED", "Failed"
+        CANCELLED = "CANCELLED", "Cancelled by the buyer"
+        TIMEOUT = "TIMEOUT", "Timed out"
+        NEEDS_REVIEW = "NEEDS_REVIEW", "Money received, needs review"
+
+    checkout = models.ForeignKey(Checkout, on_delete=models.PROTECT, related_name="payments")
+    phone = models.CharField(max_length=12, help_text="The number that was asked to pay (2547XXXXXXXX)")
+    amount = models.PositiveIntegerField(help_text="KES requested")
+    status = models.CharField(max_length=14, choices=Status.choices, default=Status.PENDING)
+    paid_to = models.CharField(max_length=60, blank=True, help_text="Paybill/Till that receives the money")
+    simulated = models.BooleanField(default=False)
+    merchant_request_id = models.CharField(max_length=60, blank=True)
+    checkout_request_id = models.CharField(max_length=60, blank=True, db_index=True)
+    receipt = models.CharField(max_length=30, blank=True, help_text="M-Pesa confirmation code")
+    result_code = models.IntegerField(null=True, blank=True)
+    result_desc = models.CharField(max_length=255, blank=True)
+    raw_callback = models.JSONField(null=True, blank=True)
+    last_query_at = models.DateTimeField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created", "-id"]
+
+    def __str__(self):
+        return f"{self.checkout.ref} {self.get_status_display()} KES {self.amount}"
+
+
 class Order(models.Model):
     class Status(models.TextChoices):
         AWAITING_PAYMENT = "AWAITING_PAYMENT", "Awaiting payment"

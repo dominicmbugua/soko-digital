@@ -1,10 +1,14 @@
 import json
+from datetime import timedelta
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
-from .models import Checkout, ContactMessage, Listing, Order, Produce, Profile
+from . import payments
+from .models import Checkout, ContactMessage, Listing, Order, Payment, Produce, Profile
 
 
 def make_user(username, role, first="Test"):
@@ -496,3 +500,199 @@ class NotFoundTests(Base):
         self.assertEqual(r.status_code, 404)
         self.assertContains(r, "We could not find that page", status_code=404)
         self.assertContains(r, reverse("market"), status_code=404)
+
+
+LIVE = dict(MPESA_SIMULATE=False, MPESA_ENV="sandbox", MPESA_CONSUMER_KEY="key", MPESA_CONSUMER_SECRET="secret",
+            MPESA_SHORTCODE="174379", MPESA_PARTY_B="174379", MPESA_PASSKEY="passkey",
+            MPESA_TRANSACTION_TYPE="CustomerPayBillOnline", MPESA_CALLBACK_BASE_URL="https://soko.example",
+            MPESA_CALLBACK_TOKEN="tok-123")
+PUSH_OK = (200, {"ResponseCode": "0", "MerchantRequestID": "mr-1", "CheckoutRequestID": "ws_CO_1"})
+STILL_OPEN = (500, {"errorCode": "500.001.1001", "errorMessage": "The transaction is being processed"})
+
+
+def callback_body(code=0, amount=2900, receipt="NLJ7RT61SV", request_id="ws_CO_1"):
+    cb = {"MerchantRequestID": "mr-1", "CheckoutRequestID": request_id, "ResultCode": code,
+          "ResultDesc": "The service request is processed successfully." if code == 0 else "Request cancelled by user"}
+    if code == 0:
+        cb["CallbackMetadata"] = {"Item": [{"Name": "Amount", "Value": amount}, {"Name": "MpesaReceiptNumber", "Value": receipt},
+                                           {"Name": "TransactionDate", "Value": 20261125101500},
+                                           {"Name": "PhoneNumber", "Value": 254712345678}]}
+    return {"Body": {"stkCallback": cb}}
+
+
+@override_settings(**LIVE)
+class MpesaLiveTests(Base):
+    """Real M-Pesa mode with Safaricom mocked: prompt -> wait -> callback decides."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.login(username="buyer1", password="pass12345")
+        self.post("/api/cart/add/", {"listingId": self.listing.id, "qty": 40})      # 2000 + 240 delivery = 2240
+        self.cid = self.post("/api/checkout/", {"phone": "0712345678", "address": "Kilimani, Nairobi", "note": ""}).json()["id"]
+        self.total = Checkout.objects.get(pk=self.cid).total
+        self.push = mock.patch.object(payments, "_post", return_value=PUSH_OK)
+        self.sent = self.push.start()
+        self.addCleanup(self.push.stop)
+
+    def pay(self, **data):
+        return self.post(f"/api/checkout/{self.cid}/pay/", data)
+
+    def status(self):
+        return self.client.get(f"/api/checkout/{self.cid}/status/").json()
+
+    def callback(self, body, token="tok-123"):
+        return self.client.post(f"/api/mpesa/callback/{token}/", json.dumps(body), content_type="application/json")
+
+    def statuses(self):
+        return {o.status for o in Order.objects.filter(checkout_id=self.cid)}
+
+    def test_pay_sends_prompt_and_waits_for_the_pin(self):
+        r = self.pay()
+        self.assertEqual(r.status_code, 202)
+        self.assertEqual(r.json()["status"], "pending")
+        self.assertEqual(r.json()["paidTo"], "Paybill 174379")
+        path, payload = self.sent.call_args.args
+        self.assertEqual(path, "/mpesa/stkpush/v1/processrequest")
+        self.assertEqual((payload["PartyA"], payload["PhoneNumber"], payload["Amount"]), ("254712345678", "254712345678", self.total))
+        self.assertEqual((payload["BusinessShortCode"], payload["PartyB"]), ("174379", "174379"))
+        self.assertEqual(payload["CallBackURL"], "https://soko.example/api/mpesa/callback/tok-123/")
+        self.assertEqual(self.statuses(), {"AWAITING_PAYMENT"})                     # nothing is held until the PIN is entered
+        self.assertFalse(Checkout.objects.get(pk=self.cid).is_paid)
+        p = Payment.objects.get()
+        self.assertEqual((p.status, p.checkout_request_id, p.paid_to, p.simulated), ("PENDING", "ws_CO_1", "Paybill 174379", False))
+
+    def test_second_click_reuses_the_open_prompt(self):
+        self.pay()
+        self.assertEqual(self.pay().status_code, 202)
+        self.assertEqual(self.sent.call_count, 1)                                   # one prompt, never two charges
+        self.assertEqual(Payment.objects.count(), 1)
+
+    def test_callback_success_holds_every_order_once(self):
+        self.pay()
+        self.assertEqual(self.callback(callback_body(amount=self.total)).json()["ResultCode"], 0)
+        self.assertEqual(self.statuses(), {"PAYMENT_HELD"})
+        c = Checkout.objects.get(pk=self.cid)
+        self.assertEqual((c.is_paid, c.mpesa_receipt), (True, "NLJ7RT61SV"))
+        paid_at = c.paid_at
+        self.callback(callback_body(amount=self.total))                             # Safaricom repeats itself
+        self.assertEqual(Checkout.objects.get(pk=self.cid).paid_at, paid_at)
+        self.assertEqual(Payment.objects.get().status, "SUCCESS")
+        self.assertEqual(self.status()["status"], "success")
+        self.assertContains(self.client.get(reverse("checkout_done", args=[self.cid])), "NLJ7RT61SV")
+        self.assertEqual(self.pay().status_code, 409)                               # already paid
+
+    def test_cancelled_prompt_can_be_retried(self):
+        self.pay()
+        self.callback(callback_body(code=1032))
+        s = self.status()
+        self.assertEqual((s["status"], s["message"]), ("cancelled", "You cancelled the payment prompt."))
+        self.assertEqual(self.statuses(), {"AWAITING_PAYMENT"})
+        self.sent.return_value = (200, {"ResponseCode": "0", "MerchantRequestID": "mr-2", "CheckoutRequestID": "ws_CO_2"})
+        self.assertEqual(self.pay().status_code, 202)
+        self.assertEqual(Payment.objects.count(), 2)
+        self.callback(callback_body(amount=self.total, request_id="ws_CO_2", receipt="RETRY123"))
+        self.assertEqual(self.statuses(), {"PAYMENT_HELD"})
+
+    def test_callback_needs_the_secret_in_the_url(self):
+        self.pay()
+        r = self.callback(callback_body(amount=self.total), token="guess")
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(Payment.objects.get().status, "PENDING")
+        self.assertEqual(self.statuses(), {"AWAITING_PAYMENT"})
+
+    def test_callback_for_unknown_payment_or_garbage_is_harmless(self):
+        self.assertEqual(self.callback(callback_body(request_id="nope")).status_code, 200)
+        self.assertEqual(self.callback({"hello": "world"}).status_code, 200)
+        self.assertEqual(self.client.post("/api/mpesa/callback/tok-123/", "not json", content_type="application/json").status_code, 200)
+        self.assertEqual(self.statuses(), {"AWAITING_PAYMENT"})
+
+    def test_wrong_amount_is_flagged_not_released(self):
+        self.pay()
+        self.callback(callback_body(amount=1))
+        p = Payment.objects.get()
+        self.assertEqual(p.status, "NEEDS_REVIEW")
+        self.assertEqual(self.statuses(), {"AWAITING_PAYMENT"})
+        self.assertEqual(self.pay().status_code, 409)                               # and the buyer is stopped from paying again
+        self.assertContains(self.client.get(reverse("checkout_done", args=[self.cid])), "don't pay again")
+
+    def test_money_arriving_after_ops_cancelled_the_orders_is_flagged(self):
+        self.pay()
+        Order.objects.filter(checkout_id=self.cid).update(status="CANCELLED")
+        self.callback(callback_body(amount=self.total))
+        self.assertEqual(Payment.objects.get().status, "NEEDS_REVIEW")
+
+    def test_buyer_can_pay_with_another_number(self):
+        self.assertEqual(self.pay(phone="0733 000 111").status_code, 202)
+        self.assertEqual(self.sent.call_args.args[1]["PartyA"], "254733000111")
+        self.assertEqual(Checkout.objects.get(pk=self.cid).phone, "254733000111")
+        self.assertEqual(self.pay(phone="12").status_code, 400)
+
+    def test_safaricom_refusing_the_prompt_is_reported_and_retryable(self):
+        self.sent.return_value = (400, {"errorMessage": "Bad Request - Invalid PhoneNumber"})
+        r = self.pay()
+        self.assertEqual(r.status_code, 502)
+        self.assertEqual(Payment.objects.get().status, "FAILED")
+        self.sent.return_value = PUSH_OK
+        self.assertEqual(self.pay().status_code, 202)
+
+    def test_lost_callback_is_recovered_by_asking_safaricom(self):
+        self.pay()
+        Payment.objects.update(created=timezone.now() - timedelta(seconds=30))
+        self.sent.return_value = (200, {"ResultCode": "1032", "ResultDesc": "Request cancelled by user"})
+        self.assertEqual(self.status()["status"], "cancelled")
+        self.assertEqual(self.sent.call_args.args[0], "/mpesa/stkpushquery/v1/query")
+
+    def test_still_open_prompt_keeps_waiting_then_times_out_but_late_money_still_counts(self):
+        self.pay()
+        Payment.objects.update(created=timezone.now() - timedelta(seconds=30))
+        self.sent.return_value = STILL_OPEN
+        self.assertEqual(self.status()["status"], "pending")
+        Payment.objects.update(created=timezone.now() - timedelta(seconds=500), last_query_at=None)
+        self.assertEqual(self.status()["status"], "timeout")
+        self.callback(callback_body(amount=self.total))                             # the PIN was entered after we gave up
+        self.assertEqual(self.statuses(), {"PAYMENT_HELD"})
+
+    def test_query_success_then_callback_fills_in_the_receipt(self):
+        self.pay()
+        Payment.objects.update(created=timezone.now() - timedelta(seconds=30))
+        self.sent.return_value = (200, {"ResultCode": "0", "ResultDesc": "ok"})
+        self.assertEqual(self.status()["status"], "success")
+        self.assertEqual(Checkout.objects.get(pk=self.cid).mpesa_receipt, "")
+        self.callback(callback_body(amount=self.total))
+        self.assertEqual(Checkout.objects.get(pk=self.cid).mpesa_receipt, "NLJ7RT61SV")
+        self.assertEqual({o.mpesa_receipt for o in Order.objects.filter(checkout_id=self.cid)}, {"NLJ7RT61SV"})
+
+    def test_only_the_owner_can_poll(self):
+        make_user("buyer2", "buyer")
+        self.client.logout(); self.client.login(username="buyer2", password="pass12345")
+        self.assertEqual(self.client.get(f"/api/checkout/{self.cid}/status/").status_code, 404)
+
+    def test_old_one_shot_payment_cannot_fake_a_payment_in_live_mode(self):
+        self.client.logout(); self.client.login(username="buyer1", password="pass12345")
+        oid = self.post("/api/orders/", {"listingId": self.listing.id, "qty": 5, "phone": "0712345678"}).json()["id"]
+        self.assertEqual(self.post("/api/payments/collect/", {"orderId": oid}).status_code, 402)
+        self.assertEqual(Order.objects.get(pk=oid).status, "AWAITING_PAYMENT")
+
+    def test_pages_show_where_the_money_goes(self):
+        Payment.objects.create(checkout_id=self.cid, phone="254712345678", amount=self.total, paid_to="Paybill 174379")
+        self.assertContains(self.client.get(reverse("checkout_done", args=[self.cid])), "Paybill 174379")
+        staff = User.objects.create_user("ops", password="pass12345", is_staff=True)
+        self.client.force_login(staff)
+        r = self.client.get(reverse("ops_dashboard"))
+        self.assertContains(r, "Paybill 174379")
+        self.assertContains(r, "Waiting for the buyer")
+
+
+class MpesaSimulatedTests(Base):
+    def test_simulated_mode_still_pays_at_once_and_records_it(self):
+        self.client.login(username="buyer1", password="pass12345")
+        self.post("/api/cart/add/", {"listingId": self.listing.id, "qty": 10})
+        cid = self.post("/api/checkout/", {"phone": "0712345678", "address": "Kilimani, Nairobi"}).json()["id"]
+        r = self.post(f"/api/checkout/{cid}/pay/")
+        self.assertEqual((r.status_code, r.json()["status"], r.json()["simulated"]), (200, "success", True))
+        p = Payment.objects.get()
+        self.assertEqual((p.status, p.simulated), ("SUCCESS", True))
+        self.assertTrue(p.receipt.startswith("SIM"))
+
+    def test_callback_url_is_closed_when_no_secret_is_configured(self):
+        self.assertEqual(self.client.post("/api/mpesa/callback/anything/", "{}", content_type="application/json").status_code, 404)

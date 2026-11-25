@@ -570,3 +570,16 @@ img.fly{object-fit:cover;border-radius:12px}
 .help-card h3{font-size:1.15rem;margin:0 0 .3rem}
 .help-card p{margin:0 0 1rem;color:#2d4a3a}
 .help-card .btns{display:flex;flex-wrap:wrap;gap:.5rem}
+
+/* M-Pesa payment prompt: who is paid, failed state, retry form */
+.pay-box .pay-to{margin:.25rem 0 1rem;font-size:.92rem;opacity:.85}
+.pay-actions{margin-top:1.25rem}
+.pay-overlay.failed .phone i{animation:none;border-color:rgba(255,255,255,.25)}
+.pay-overlay.failed h2{color:#ffd9d0}
+.retry-form{max-width:360px;margin:1.25rem auto 0;text-align:left}
+.retry-form .btn{width:100%}
+.pay-tag{display:inline-block;padding:.1rem .5rem;border-radius:99px;font-size:.78rem;font-weight:700;background:var(--soft);color:var(--ink)}
+.pay-tag.SUCCESS{background:#d8efdf;color:#14582f}
+.pay-tag.PENDING{background:#fff2cc;color:#7a5600}
+.pay-tag.NEEDS_REVIEW{background:#f9d6cf;color:#8a2412}
+.pay-tag.FAILED,.pay-tag.CANCELLED,.pay-tag.TIMEOUT{background:#ececec;color:#444}

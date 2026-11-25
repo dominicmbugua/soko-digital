@@ -67,7 +67,7 @@
         </div>
         <div class="col-lg-6 wow fadeInRight" data-wow-delay="0.15s">
           <h2>Where we are today</h2>
-          <p class="mt-3 mb-0">We are in our pilot: one route from Molo and Nakuru to Nairobi, and {{ produce|length }} kinds of produce. Payments are simulated while we finish connecting live M-Pesa, so no real money moves yet. We would rather get one route right than promise everything at once.</p>
+          <p class="mt-3 mb-0">We are in our pilot: one route from Molo and Nakuru to Nairobi, and {{ produce|length }} kinds of produce.{% if site.mpesa_simulated %} Payments are simulated while we finish connecting live M-Pesa, so no real money moves yet.{% endif %} We would rather get one route right than promise everything at once.</p>
         </div>
       </div>
     </div>

@@ -36,7 +36,7 @@
       <div class="meta"><strong>{{ o.ref }}</strong> · KES {{ o.total|intcomma }} <small class="text-muted">(produce {{ o.produce_value|intcomma }} + delivery {{ o.delivery_fee|intcomma }})</small>
         {% if o.mpesa_receipt %}<br><small class="text-muted">M-Pesa ref {{ o.mpesa_receipt }} · {{ o.created|naturaltime }}</small>{% else %}<br><small class="text-muted">{{ o.created|naturaltime }}</small>{% endif %}</div>
       <div class="acts">
-        {% if o.status == "AWAITING_PAYMENT" %}{% if o.checkout_id %}<button class="btn btn-primary btn-sm" data-api="{% url 'api_checkout_pay' o.checkout_id %}">Pay now (simulated)</button>{% else %}<button class="btn btn-primary btn-sm" data-api="{% url 'api_collect_payment' %}" data-body='{"orderId": {{ o.id }}}'>Pay now (simulated)</button>{% endif %}{% endif %}
+        {% if o.status == "AWAITING_PAYMENT" %}{% if o.checkout_id %}<a class="btn btn-primary btn-sm" href="{% url 'checkout_done' o.checkout_id %}">Pay now</a>{% elif site.mpesa_simulated %}<button class="btn btn-primary btn-sm" data-api="{% url 'api_collect_payment' %}" data-body='{"orderId": {{ o.id }}}'>Pay now (simulated)</button>{% endif %}{% endif %}
         {% if o.status == "PAYMENT_HELD" %}<span class="note">Money held. Waiting for delivery.</span>{% if demo %}<button class="btn btn-outline-dark btn-sm" data-api="{% url 'api_deliver_order' o.id %}">Simulate delivery</button>{% endif %}{% endif %}
         {% if o.status == "DELIVERED" %}
           <button class="btn btn-primary btn-sm" data-api="{% url 'api_confirm_order' o.id %}">Confirm delivery</button>

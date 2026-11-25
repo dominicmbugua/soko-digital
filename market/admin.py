@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 
-from .models import Checkout, ContactMessage, Listing, Order, Produce, Profile
+from .models import Checkout, ContactMessage, Listing, Order, Payment, Produce, Profile
 
 
 @admin.register(Profile)
@@ -49,3 +49,22 @@ class ContactMessageAdmin(admin.ModelAdmin):
     search_fields = ("name", "contact", "message")
     list_editable = ("handled",)
     readonly_fields = ("name", "contact", "topic", "message", "created")
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    """Every M-Pesa attempt: who was asked, how much, which Paybill/Till receives it, and how it ended.
+    Filter by 'Money received, needs review' to find payments ops must look at by hand."""
+
+    list_display = ("created", "checkout", "phone", "amount", "status", "receipt", "paid_to", "simulated")
+    list_filter = ("status", "simulated", "paid_to")
+    search_fields = ("receipt", "phone", "checkout_request_id", "checkout__buyer__username")
+    date_hierarchy = "created"
+    readonly_fields = [f.name for f in Payment._meta.fields]       # a payment record is evidence: view only
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+

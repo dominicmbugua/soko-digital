@@ -27,7 +27,7 @@
   </div>
   <div class="accordion-item">
     <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-3" aria-expanded="false" aria-controls="c-buyers-3">How do I pay?</button></h3>
-    <div id="c-buyers-3" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">By M-Pesa. At checkout you give the number that will pay. For now payments are simulated while we finish connecting live M-Pesa, so no real money moves yet.</div></div>
+    <div id="c-buyers-3" class="accordion-collapse collapse" data-bs-parent="#acc-buyers"><div class="accordion-body">By M-Pesa. At checkout you give the number that will pay. {% if site.mpesa_simulated %}For now payments are simulated while we finish connecting live M-Pesa, so no real money moves yet.{% else %}You get an M-Pesa prompt on that phone, enter your PIN, and the money goes to {{ site.pay_to }}, where it is held until you confirm delivery.{% endif %}</div></div>
   </div>
   <div class="accordion-item">
     <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-buyers-4" aria-expanded="false" aria-controls="c-buyers-4">Is my money safe?</button></h3>

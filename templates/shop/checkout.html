@@ -21,12 +21,12 @@
         <div class="mb-4">
           <label for="co-phone" class="form-label">M-Pesa number</label>
           <input id="co-phone" class="form-control" inputmode="tel" placeholder="0712345678" value="{{ phone }}" required>
-          <div class="form-text">We'll send the payment prompt to this number.</div>
+          <div class="form-text">We'll send the M-Pesa PIN prompt to this number. It can be any Safaricom line you can pick up now, not only your own.</div>
         </div>
-        <div class="pay-method"><span class="pm-ico">{% icon "smartphone" %}</span><div><strong>Pay with M-Pesa</strong><small>You'll get a prompt on your phone. Your money is held until you confirm the delivery.</small></div></div>
+        <div class="pay-method"><span class="pm-ico">{% icon "smartphone" %}</span><div><strong>Pay with M-Pesa</strong><small>You'll get a prompt on your phone. The money goes to <b>{{ site.pay_to }}</b> and is held until you confirm the delivery.</small></div></div>
         <div id="co-error" class="text-danger fw-semibold my-2" role="alert"></div>
         <button type="submit" id="co-pay" class="btn btn-primary btn-lg w-100">Pay KES {{ cart.total|intcomma }} with M-Pesa</button>
-        <p class="small text-muted mt-3 mb-0">Demo: the payment is simulated and no real money moves.</p>
+        {% if site.mpesa_simulated %}<p class="small text-muted mt-3 mb-0">Demo: the payment is simulated and no real money moves.</p>{% endif %}
       </form>
     </div>
     <div class="col-lg-5">
@@ -50,10 +50,6 @@
     </div>
   </div>
 </main>
-<div class="pay-overlay" id="pay-overlay" hidden>
-  <div class="pay-box"><div class="phone">{% icon "smartphone" %}<i></i></div>
-    <h2 class="h4">Check your phone</h2><p>Enter your M-Pesa PIN to pay <strong>KES {{ cart.total|intcomma }}</strong>.</p>
-    <small>Demo: this is simulated and will complete by itself.</small></div>
-</div>
+{% include "shop/_pay_overlay.html" with amount=cart.total %}
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/checkout.js' %}"></script>{% endblock %}

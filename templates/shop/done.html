@@ -9,13 +9,23 @@
       <svg class="check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-17"/></svg>
       <h1>Order placed!</h1>
       <p>Thank you, {{ user.first_name|default:user.username }}. Your payment of <strong>KES {{ checkout.total|intcomma }}</strong> is held safely until you confirm delivery.</p>
-      <p class="receipt">M-Pesa ref <strong>{{ checkout.mpesa_receipt }}</strong> · {{ checkout.ref }}</p>
+      <p class="receipt">{% if checkout.mpesa_receipt %}M-Pesa ref <strong>{{ checkout.mpesa_receipt }}</strong>{% else %}M-Pesa confirmation code on its way by SMS{% endif %} · {{ checkout.ref }}</p>
     {% else %}
       <span class="done-ico">{% icon "hourglass" %}</span>
+      {% if needs_review %}
+      <h1>We're checking your payment</h1>
+      <p>M-Pesa told us a payment for <strong>{{ checkout.ref }}</strong> arrived, but we need to confirm it before releasing your order. Please <strong>don't pay again</strong>. Our team will contact you.</p>
+      {% else %}
       <h1>One step left</h1>
       <p>Your order <strong>{{ checkout.ref }}</strong> is saved but not paid yet. The produce is reserved for you.</p>
-      <button class="btn btn-primary btn-lg" data-api="{% url 'api_checkout_pay' checkout.id %}">Pay KES {{ checkout.total|intcomma }} with M-Pesa</button>
-      <p class="small text-muted mt-2">Demo: payment is simulated.</p>
+      <form id="retry-form" class="retry-form" data-checkout="{{ checkout.id }}" data-pay="{% url 'api_checkout_pay' checkout.id %}" data-poll="{% url 'api_checkout_status' checkout.id %}" novalidate>
+        <label for="retry-phone" class="form-label">M-Pesa number to pay with</label>
+        <input id="retry-phone" class="form-control mb-2" inputmode="tel" value="{{ phone }}" placeholder="0712345678" required>
+        <div id="retry-error" class="text-danger fw-semibold small mb-2" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-lg">Pay KES {{ checkout.total|intcomma }} with M-Pesa</button>
+        <p class="small text-muted mt-2 mb-0">Paying to <strong>{{ site.pay_to }}</strong>.{% if site.mpesa_simulated %} Demo: payment is simulated.{% endif %}</p>
+      </form>
+      {% endif %}
     {% endif %}
   </div>
 
@@ -50,5 +60,6 @@
     </div>
   </div>
 </main>
+{% if not checkout.is_paid and not needs_review %}{% include "shop/_pay_overlay.html" with amount=checkout.total %}{% endif %}
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/dashboard.js' %}"></script><script src="{% static 'js/checkout.js' %}"></script>{% endblock %}

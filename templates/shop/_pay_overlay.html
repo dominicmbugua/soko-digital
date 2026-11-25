@@ -1,0 +1,14 @@
+{% load humanize market_extras %}
+<div class="pay-overlay" id="pay-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="pay-title">
+  <div class="pay-box">
+    <div class="phone" id="pay-icon">{% icon "smartphone" %}<i></i></div>
+    <h2 class="h4" id="pay-title">Check your phone</h2>
+    <p id="pay-msg">Enter your M-Pesa PIN to pay <strong>KES {{ amount|intcomma }}</strong>.</p>
+    <p class="pay-to">Paying to <strong>{{ site.pay_to }}</strong></p>
+    <div class="pay-actions" id="pay-actions" hidden>
+      <button type="button" class="btn btn-light btn-lg w-100 mb-2" id="pay-retry">Try again</button>
+      <button type="button" class="btn btn-outline-light w-100" id="pay-close">Change number</button>
+    </div>
+    {% if site.mpesa_simulated %}<small id="pay-demo">Demo: this is simulated and will complete by itself.</small>{% endif %}
+  </div>
+</div>

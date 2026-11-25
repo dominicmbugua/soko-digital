@@ -20,7 +20,7 @@
       <p>You set your own price. Make sure the produce, quantity, grade estimate and location you give are true. Bring the produce to the collection point so it can be weighed and graded. If it does not match the listing, the order may be changed or cancelled.</p>
 
       <h2 id="orders-and-payment-for-buyers">4. Orders and payment (for buyers)</h2>
-      <p>You pay the price of the produce plus delivery (KES {{ site.delivery }} per kilogram). Your payment is held when you order and is released to the farmer only after you confirm delivery. At the moment payments are simulated while we finish connecting live M-Pesa, so no real money moves.</p>
+      <p>You pay the price of the produce plus delivery (KES {{ site.delivery }} per kilogram). Your payment is held when you order and is released to the farmer only after you confirm delivery.{% if site.mpesa_simulated %} At the moment payments are simulated while we finish connecting live M-Pesa, so no real money moves.{% endif %}</p>
 
       <h2 id="our-fee">5. Our fee</h2>
       <p>We take a {{ site.fee }}% fee from the farmer's price, only when the farmer is paid. Buyers are not charged a fee on top of produce and delivery.</p>

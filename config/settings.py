@@ -154,5 +154,38 @@ SOKO_WHATSAPP = os.environ.get("SOKO_WHATSAPP", "")          # digits only, e.g.
 DEMO_MODE = True
 
 # Using ngrok? Uncomment and use your own host:
-# ALLOWED_HOSTS = ['.ngrok-free.app']
-# CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.app']
+ALLOWED_HOSTS = ['.ngrok-free.app', '127.0.0.1', 'localhost']
+CSRF_TRUSTED_ORIGINS = ['https://*.ngrok-free.app']
+
+# ---------------------------------------------------------------
+# M-Pesa (Safaricom Daraja STK Push)
+# ---------------------------------------------------------------
+# Put these in environment variables (never commit real keys).
+# Until ALL of the required ones are set, payments stay SIMULATED (the demo behaviour).
+#
+#   MPESA_ENV              sandbox (default) or production
+#   MPESA_CONSUMER_KEY     from your Daraja app
+#   MPESA_CONSUMER_SECRET  from your Daraja app
+#   MPESA_SHORTCODE        THE ACCOUNT THAT RECEIVES THE MONEY: your Paybill number, or your Till's
+#                          head-office/store number (this is "BusinessShortCode")
+#   MPESA_PASSKEY          Lipa na M-Pesa passkey for that shortcode
+#   MPESA_TRANSACTION_TYPE CustomerPayBillOnline (Paybill, default) or CustomerBuyGoodsOnline (Till)
+#   MPESA_PARTY_B          Till number if it differs from MPESA_SHORTCODE (Till only; Paybill leaves it blank)
+#   MPESA_CALLBACK_BASE_URL  public https URL of this site, e.g. https://abc123.ngrok-free.app (no trailing slash)
+#   MPESA_CALLBACK_TOKEN   a long random secret that becomes part of the callback URL
+#   MPESA_SIMULATE         set to 1 to force simulation even when everything above is filled in
+MPESA_ENV = os.environ.get("MPESA_ENV", "sandbox").lower()
+MPESA_CONSUMER_KEY = os.environ.get("MPESA_CONSUMER_KEY", "")
+MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "")
+MPESA_SHORTCODE = os.environ.get("MPESA_SHORTCODE", "")
+MPESA_PASSKEY = os.environ.get("MPESA_PASSKEY", "")
+MPESA_TRANSACTION_TYPE = os.environ.get("MPESA_TRANSACTION_TYPE", "CustomerPayBillOnline")
+MPESA_PARTY_B = os.environ.get("MPESA_PARTY_B", "") or MPESA_SHORTCODE
+MPESA_CALLBACK_BASE_URL = os.environ.get("MPESA_CALLBACK_BASE_URL", "").rstrip("/")
+MPESA_CALLBACK_TOKEN = os.environ.get("MPESA_CALLBACK_TOKEN", "")
+MPESA_SIMULATE = os.environ.get("MPESA_SIMULATE", "") in ("1", "true", "True") or not all(
+    [MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, MPESA_PASSKEY,
+     MPESA_CALLBACK_BASE_URL, MPESA_CALLBACK_TOKEN])
+MPESA_PROMPT_TIMEOUT = 120    # seconds to wait for the buyer to enter the PIN before we give up
+
+

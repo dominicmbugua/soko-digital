@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from .forms import ContactForm, RegisterForm
 from .cart import Cart
-from .models import Checkout, Produce
+from .models import Checkout, Payment, Produce
 from .utils import emoji_for, fee_for, photo_url, role_of
 
 
@@ -119,4 +119,7 @@ def checkout(request):
 def checkout_done(request, pk):
     checkout = get_object_or_404(Checkout, pk=pk, buyer=request.user)
     orders = checkout.orders.select_related("listing__produce", "listing__farmer")
-    return render(request, "shop/done.html", {"checkout": checkout, "orders": orders})
+    phone = "0" + checkout.phone[3:] if checkout.phone.startswith("254") else checkout.phone
+    review = checkout.payments.filter(status=Payment.Status.NEEDS_REVIEW).exists()
+    return render(request, "shop/done.html", {"checkout": checkout, "orders": orders, "phone": phone,
+                                              "needs_review": review})
