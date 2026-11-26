@@ -3,7 +3,7 @@
 {% block title %}Operations – Soko Digital{% endblock %}
 {% block rolelabel %}Operations (staff){% endblock %}
 {% block side %}
-  <a href="#overview">{% icon "layout-dashboard" %}Overview</a><a href="#queue">{% icon "truck" %}Delivery queue</a><a href="#disputes">{% icon "triangle-alert" %}Disputes{% if disputes %} <span class="count">{{ disputes|length }}</span>{% endif %}</a>
+  <a href="#overview">{% icon "layout-dashboard" %}Overview</a><a href="#queue">{% icon "truck" %}Delivery queue</a><a href="#payouts">{% icon "hand-coins" %}Pay farmers{% if payouts %} <span class="count">{{ payouts|length }}</span>{% endif %}</a><a href="#disputes">{% icon "triangle-alert" %}Disputes{% if disputes %} <span class="count">{{ disputes|length }}</span>{% endif %}</a>
   <a href="#payments">{% icon "landmark" %}M-Pesa payments{% if mpesa_review %} <span class="count">{{ mpesa_review }}</span>{% endif %}</a><a href="#produce">{% icon "trending-up" %}Top produce</a><a href="#settled">{% icon "circle-check" %}Recently settled</a>
   <a class="side-cta" href="/admin/">Open Django admin</a>
 {% endblock %}
@@ -17,7 +17,8 @@
     {% include "dashboard/_stat.html" with icon="landmark" label="Our fees" prefix="KES " value=fees hint="From settled orders" %}
     {% include "dashboard/_stat.html" with icon="smartphone" label="Received via M-Pesa" prefix="KES " value=mpesa_received hint=site.pay_to %}
     {% include "dashboard/_stat.html" with icon="lock" label="Funds held" prefix="KES " value=held hint="Paid, not yet released" %}
-    {% include "dashboard/_stat.html" with icon="hand-coins" label="Paid to farmers" prefix="KES " value=paid_out %}
+    {% include "dashboard/_stat.html" with icon="hourglass" label="Owed to farmers" prefix="KES " value=owed hint="Settled, not yet sent" %}
+    {% include "dashboard/_stat.html" with icon="hand-coins" label="Paid to farmers" prefix="KES " value=paid_out hint="Transfers you recorded" %}
     {% include "dashboard/_stat.html" with icon="tractor" label="Farmers" value=farmers %}
     {% include "dashboard/_stat.html" with icon="store" label="Buyers" value=buyers %}
     {% include "dashboard/_stat.html" with icon="triangle-alert" label="Open disputes" value=disputes|length %}
@@ -35,6 +36,24 @@
     {% include "dashboard/_ops_table.html" with orders=delivered actions="" %}</div>
   <div class="wow fadeInUp panel"><div class="panel-head"><h2 class="h5">Awaiting payment <span class="count">{{ unpaid|length }}</span></h2><small class="text-muted">Cancelling returns the stock to the listing.</small></div>
     {% include "dashboard/_ops_table.html" with orders=unpaid actions="cancel" %}</div>
+</section>
+
+<section id="payouts" class="wow fadeInUp panel">
+  <div class="panel-head"><h2 class="h5">Pay farmers <span class="count">{{ payouts|length }}</span></h2><small class="text-muted">For each farmer: send the amount to their phone from your M-Pesa (Send Money), then paste the M-Pesa code of that transfer and press <b>Mark paid</b>.</small></div>
+  <div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Farmer</th><th>Send to</th><th>Orders</th><th class="text-end">Amount (KES)</th><th>After sending</th></tr></thead><tbody>
+  {% for g in payouts %}<tr>
+    <td><strong>{{ g.name }}</strong></td>
+    <td><b>{{ g.phone }}</b></td>
+    <td><small class="text-muted">{{ g.refs }}</small></td>
+    <td class="text-end"><b>{{ g.total|intcomma }}</b></td>
+    <td><form method="post" action="{% url 'ops_payout' g.id %}" class="d-flex gap-2">{% csrf_token %}
+      <input type="hidden" name="orders" value="{{ g.ids }}"><input type="hidden" name="amount" value="{{ g.total }}">
+      <input name="reference" class="form-control form-control-sm" placeholder="M-Pesa code" maxlength="20" required style="min-width:130px;text-transform:uppercase">
+      <button class="btn btn-sm btn-primary text-nowrap" onclick="return confirm('Only press this after you sent KES {{ g.total }} to {{ g.name }}.')">Mark paid</button></form></td>
+  </tr>{% empty %}<tr><td colspan="5" class="empty">Nobody is waiting to be paid.</td></tr>{% endfor %}</tbody></table></div>
+  {% if recent_payouts %}<p class="small text-muted mt-3 mb-1 px-3">Recently paid</p>
+  <div class="table-responsive"><table class="table align-middle mb-0"><tbody>
+  {% for o in recent_payouts %}<tr><td>{{ o.ref }}</td><td>{{ o.listing.farmer_name }}</td><td class="text-end">KES {{ o.farmer_payout|intcomma }}</td><td>{{ o.payout_ref }}</td><td>{{ o.paid_out_at|naturaltime }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
 </section>
 
 <section id="disputes" class="wow fadeInUp panel">

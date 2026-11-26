@@ -15,4 +15,5 @@ def site(request):
                      "phone_href": "".join(ch for ch in settings.SOKO_CONTACT_PHONE if ch.isdigit() or ch == "+"),
                      "whatsapp": wa, "whatsapp_url": f"https://wa.me/{wa}" if wa else "",
                      "has_contact": bool(settings.SOKO_CONTACT_EMAIL or settings.SOKO_CONTACT_PHONE or wa),
-                     "pay_to": payments.receiving_account(), "mpesa_simulated": payments.simulated()}}
+                     "pay_to": payments.receiving_account(), "mpesa_simulated": payments.simulated(),
+                     "unpaid_minutes": getattr(settings, "SOKO_UNPAID_EXPIRY_MINUTES", 30)}}

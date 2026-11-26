@@ -121,5 +121,6 @@ def checkout_done(request, pk):
     orders = checkout.orders.select_related("listing__produce", "listing__farmer")
     phone = "0" + checkout.phone[3:] if checkout.phone.startswith("254") else checkout.phone
     review = checkout.payments.filter(status=Payment.Status.NEEDS_REVIEW).exists()
+    expired = not checkout.is_paid and not review and not checkout.orders.filter(status="AWAITING_PAYMENT").exists()
     return render(request, "shop/done.html", {"checkout": checkout, "orders": orders, "phone": phone,
-                                              "needs_review": review})
+                                              "needs_review": review, "expired": expired})

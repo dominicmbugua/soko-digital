@@ -82,14 +82,16 @@ def farmer_dashboard(request):
     listings = Listing.objects.filter(farmer=user).select_related("produce")
     orders = Order.objects.filter(listing__farmer=user).select_related("listing__produce", "buyer")
     settled = orders.filter(status=S.SETTLED)
+    sent = settled.filter(paid_out_at__isnull=False)
+    awaiting_payout = settled.filter(paid_out_at__isnull=True)
     in_progress = orders.filter(status__in=(S.PAYMENT_HELD, S.DELIVERED))
     since = timezone.now() - timedelta(days=14)
     chart = daily_series(((timezone.localtime(o.updated).date(), o.farmer_payout)
                           for o in settled.filter(updated__gte=since)))
     return render(request, "dashboard/farmer.html", {
         "listings": listings, "orders": orders[:25],
-        "paid_out": total(settled, "farmer_payout"),
-        "pending": sum(o.produce_value - fee_for(o.produce_value) for o in in_progress),
+        "paid_out": total(sent, "farmer_payout"),
+        "pending": sum(o.produce_value - fee_for(o.produce_value) for o in in_progress) + total(awaiting_payout, "farmer_payout"),
         "kg_sold": total(orders.filter(status__in=(S.PAYMENT_HELD, S.DELIVERED, S.SETTLED)), "qty_kg"),
         "live_count": listings.filter(is_active=True, qty_kg__gt=0).count(),
         "sold_out": [l for l in listings if l.is_active and l.qty_kg == 0],
@@ -154,8 +156,31 @@ def buyer_dashboard(request):
 
 
 # ---------------- Ops (staff) ----------------
+def _phone_local(phone):
+    return "0" + phone[3:] if phone.startswith("254") else phone
+
+
+def _owed_to_farmers():
+    """Settled orders we haven't sent the money for yet, grouped by farmer, ready for a manual M-Pesa transfer."""
+    groups = {}
+    qs = (Order.objects.filter(status=S.SETTLED, paid_out_at__isnull=True)
+          .select_related("listing__farmer__profile").order_by("updated"))
+    for o in qs:
+        f = o.listing.farmer
+        profile = getattr(f, "profile", None)
+        g = groups.setdefault(f.id, {"id": f.id, "name": f.get_full_name() or f.get_username(), "orders": [], "total": 0,
+                                     "phone": _phone_local(profile.phone) if profile else "(no phone on file)"})
+        g["orders"].append(o)
+        g["total"] += o.farmer_payout
+    for g in groups.values():
+        g["ids"] = ",".join(str(o.id) for o in g["orders"])
+        g["refs"] = ", ".join(o.ref for o in g["orders"])
+    return sorted(groups.values(), key=lambda g: -g["total"])
+
+
 @staff_required
 def ops_dashboard(request):
+    services.expire_unpaid_soon()
     orders = Order.objects.select_related("listing__produce", "listing__farmer", "buyer", "checkout")
     since = timezone.now() - timedelta(days=14)
     recent = orders.filter(created__gte=since)
@@ -170,7 +195,10 @@ def ops_dashboard(request):
         "gmv": total(paid, "produce_value"),
         "fees": total(by(S.SETTLED), "fee"),
         "held": total(held, "produce_value") + total(held, "delivery_fee"),
-        "paid_out": total(by(S.SETTLED), "farmer_payout"),
+        "paid_out": total(by(S.SETTLED).filter(paid_out_at__isnull=False), "farmer_payout"),
+        "owed": total(by(S.SETTLED).filter(paid_out_at__isnull=True), "farmer_payout"),
+        "payouts": _owed_to_farmers(),
+        "recent_payouts": by(S.SETTLED).filter(paid_out_at__isnull=False).select_related("listing__farmer").order_by("-paid_out_at")[:8],
         "farmers": Profile.objects.filter(role="farmer").count(),
         "buyers": Profile.objects.filter(role="buyer").count(),
         "unpaid": by(S.AWAITING_PAYMENT), "ready": by(S.PAYMENT_HELD), "delivered": by(S.DELIVERED),
@@ -192,6 +220,20 @@ def ops_action(request, order_id):
     try:
         order = services.ops_action(order_id, request.POST.get("action", ""))
         messages.success(request, f"{order.ref} is now '{order.get_status_display()}'.")
+    except services.ServiceError as e:
+        messages.warning(request, str(e))
+    return redirect("ops_dashboard")
+
+
+@staff_required
+@require_POST
+def ops_payout(request, farmer_id):
+    """Ops sent a farmer their money by M-Pesa and records the transfer code here."""
+    ids = [int(x) for x in request.POST.get("orders", "").split(",") if x.isdigit()]
+    amount = int(request.POST["amount"]) if request.POST.get("amount", "").isdigit() else -1
+    try:
+        orders = services.mark_payout(farmer_id, ids, amount, request.POST.get("reference", ""))
+        messages.success(request, f"Recorded: KES {amount:,} sent for {len(orders)} order(s).")
     except services.ServiceError as e:
         messages.warning(request, str(e))
     return redirect("ops_dashboard")

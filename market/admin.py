@@ -25,7 +25,7 @@ class ListingAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("ref", "listing", "buyer", "qty_kg", "total", "status", "mpesa_receipt", "farmer_payout", "created")
+    list_display = ("ref", "listing", "buyer", "qty_kg", "total", "status", "mpesa_receipt", "farmer_payout", "paid_out_at", "created")
     list_filter = ("status",)
     search_fields = ("buyer__username", "mpesa_receipt")
     actions = ["mark_delivered"]

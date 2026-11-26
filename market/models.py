@@ -155,6 +155,8 @@ class Order(models.Model):
     mpesa_receipt = models.CharField(max_length=30, blank=True)
     fee = models.PositiveIntegerField(default=0, help_text="Our fee, KES (set when settled)")
     farmer_payout = models.PositiveIntegerField(default=0, help_text="KES (set when settled)")
+    paid_out_at = models.DateTimeField(null=True, blank=True, help_text="When we sent the farmer their money")
+    payout_ref = models.CharField(max_length=30, blank=True, help_text="M-Pesa code of the transfer to the farmer")
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 

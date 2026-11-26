@@ -13,8 +13,8 @@
   {% if sold_out %}<div class="alert alert-warning alert-icon">{% icon "bell" %}<div><strong>{{ sold_out|length }} listing{{ sold_out|length|pluralize }} sold out</strong> ({% for l in sold_out %}{{ l.produce.name }}{% if not forloop.last %}, {% endif %}{% endfor %}). Buyers can't order until you add more kilograms.</div></div>{% endif %}
   {% if disputed %}<div class="alert alert-danger alert-icon">{% icon "triangle-alert" %}<div>{{ disputed }} order{{ disputed|pluralize }} reported a problem. Our team will contact you.</div></div>{% endif %}
   <div class="stat-grid">
-    {% include "dashboard/_stat.html" with icon="wallet" label="Paid out" prefix="KES " value=paid_out hint="Money already sent to you" %}
-    {% include "dashboard/_stat.html" with icon="hourglass" label="On the way to you" prefix="KES " value=pending hint="Held until buyers confirm" %}
+    {% include "dashboard/_stat.html" with icon="wallet" label="Paid out" prefix="KES " value=paid_out hint="Sent to your M-Pesa" %}
+    {% include "dashboard/_stat.html" with icon="hourglass" label="On the way to you" prefix="KES " value=pending hint="Held, or waiting for our transfer" %}
     {% include "dashboard/_stat.html" with icon="scale" label="Kilograms sold" value=kg_sold hint="Paid and delivered orders" %}
     {% include "dashboard/_stat.html" with icon="circle-dot" label="Live listings" value=live_count hint="Visible to buyers" %}
   </div>
@@ -56,7 +56,7 @@
         <td><div class="cell-art" data-p="{{ o.listing.produce.slug }}">{% produce_art o.listing.produce.slug "sm" %}{{ o.listing.produce.name }}</div></td>
         <td>{{ o.buyer.get_full_name|default:o.buyer.username }}</td><td class="text-end">{{ o.qty_kg }}</td>
         <td><span class="st st-{{ o.status }}">{{ o.get_status_display }}</span></td>
-        <td class="text-end">{% if o.status == "SETTLED" %}KES {{ o.farmer_payout|intcomma }}{% else %}–{% endif %}</td></tr>
+        <td class="text-end">{% if o.status == "SETTLED" %}KES {{ o.farmer_payout|intcomma }}<br><small class="text-muted">{% if o.paid_out_at %}Sent · {{ o.payout_ref }}{% else %}Transfer on its way{% endif %}</small>{% else %}–{% endif %}</td></tr>
     {% empty %}<tr><td colspan="6" class="empty">No orders yet. They will appear here when buyers order.</td></tr>{% endfor %}
     </tbody>
   </table></div>

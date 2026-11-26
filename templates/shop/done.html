@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static humanize market_extras %}
-{% block title %}{% if checkout.is_paid %}Order placed{% else %}Finish your order{% endif %} – Soko Digital{% endblock %}
+{% block title %}{% if checkout.is_paid %}Order placed{% elif expired %}Order closed{% else %}Finish your order{% endif %} – Soko Digital{% endblock %}
 {% block content %}
 <main class="container done-page {% if checkout.is_paid %}confetti-host{% endif %}">
   <ol class="steps" aria-label="Checkout steps"><li class="done">Cart</li><li class="done">Delivery &amp; payment</li><li class="on">Done</li></ol>
@@ -15,9 +15,13 @@
       {% if needs_review %}
       <h1>We're checking your payment</h1>
       <p>M-Pesa told us a payment for <strong>{{ checkout.ref }}</strong> arrived, but we need to confirm it before releasing your order. Please <strong>don't pay again</strong>. Our team will contact you.</p>
+      {% elif expired %}
+      <h1>This order is no longer open</h1>
+      <p><strong>{{ checkout.ref }}</strong> wasn't paid within {{ site.unpaid_minutes }} minutes, or our team cancelled it, so the produce went back on sale. Nothing was charged. You can order again from the marketplace.</p>
+      <a class="btn btn-primary btn-lg" href="{% url 'market' %}">Back to the marketplace</a>
       {% else %}
       <h1>One step left</h1>
-      <p>Your order <strong>{{ checkout.ref }}</strong> is saved but not paid yet. The produce is reserved for you.</p>
+      <p>Your order <strong>{{ checkout.ref }}</strong> is saved but not paid yet. The produce is reserved for you for {{ site.unpaid_minutes }} minutes.</p>
       <form id="retry-form" class="retry-form" data-checkout="{{ checkout.id }}" data-pay="{% url 'api_checkout_pay' checkout.id %}" data-poll="{% url 'api_checkout_status' checkout.id %}" novalidate>
         <label for="retry-phone" class="form-label">M-Pesa number to pay with</label>
         <input id="retry-phone" class="form-control mb-2" inputmode="tel" value="{{ phone }}" placeholder="0712345678" required>
@@ -60,6 +64,6 @@
     </div>
   </div>
 </main>
-{% if not checkout.is_paid and not needs_review %}{% include "shop/_pay_overlay.html" with amount=checkout.total %}{% endif %}
+{% if not checkout.is_paid and not needs_review and not expired %}{% include "shop/_pay_overlay.html" with amount=checkout.total %}{% endif %}
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/dashboard.js' %}"></script><script src="{% static 'js/checkout.js' %}"></script>{% endblock %}

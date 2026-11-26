@@ -23,6 +23,7 @@ urlpatterns = [
     path("dashboard/buyer/", dashboards.buyer_dashboard, name="buyer_dashboard"),
     path("dashboard/ops/", dashboards.ops_dashboard, name="ops_dashboard"),
     path("dashboard/ops/orders/<int:order_id>/", dashboards.ops_action, name="ops_action"),
+    path("dashboard/ops/payouts/<int:farmer_id>/", dashboards.ops_payout, name="ops_payout"),
     path("register/", views.register, name="register"),
     path("login/", auth_views.LoginView.as_view(authentication_form=LoginForm), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),

@@ -112,13 +112,25 @@ MPESA_CALLBACK_TOKEN=<a long random string>      # e.g. python -c "import secret
 
 **Check before launch:** run a real KES 1 test on production and confirm the Payment row, the receipt and the money in your Paybill/Till. The sandbox does not move real money.
 
+## Paying farmers (manual payouts)
+When a buyer confirms delivery (or ops releases a disputed order), the order is *Settled* and the farmer is **owed** their price minus our fee. Nothing is sent automatically. In `/dashboard/ops/`, **Pay farmers** lists each farmer with the phone to send to and the exact amount.
+1. Send that amount to that number from your M-Pesa (Send Money).
+2. Paste the M-Pesa code of your transfer and press **Mark paid**.
+
+That records who was paid, when, and the code, and the farmer sees "Sent" with the code on their dashboard. If an order settles while the page is open, only the orders you actually paid are recorded; the new one stays on the list. The same orders can never be marked paid twice.
+
+## Unpaid orders expire
+A checkout that is not paid within `SOKO_UNPAID_EXPIRY_MINUTES` (30, in `config/settings.py`) is cancelled and the produce goes back on sale. It never cancels a checkout with a PIN prompt still open, or one where money arrived and is waiting for review. A buyer who opens an expired checkout is told it is closed and can order again.
+
+Expiry also runs by itself when people use the site (at most once a minute). For a tidy, reliable setup run it on a schedule: `python manage.py expire_unpaid` every 5 minutes (Windows Task Scheduler, or cron on a server).
+
 ## Order flow (enforced on the server)
 `AWAITING_PAYMENT` -> `PAYMENT_HELD` -> `DELIVERED` -> `SETTLED` (farmer paid price minus 8%) or `DISPUTED`.
 Steps can't be skipped or repeated. Stock is locked while an order is created so it can't be oversold.
 
 ## Known gaps / next steps
-1. Real M-Pesa is built; it needs your Daraja keys and a public callback URL (see *Going live with M-Pesa*). Real payouts to farmers (B2C) are still not built.
-2. Unpaid orders keep stock reserved until ops cancels them. Add an automatic expiry later.
+1. Real M-Pesa is built; it needs your Daraja keys and a public callback URL (see *Going live with M-Pesa*).
+2. Farmer payouts are **manual** for now (see *Paying farmers*). Automatic payouts (M-Pesa B2C) need a Safaricom-approved business account and are not built.
 3. Delivery: with `DEMO_MODE = True` the website marks orders delivered. For real use set it to `False`; the delivery team uses the admin action "Mark selected orders as delivered".
 4. Real escrow/payout (B2C to the farmer) needs a holding-account arrangement. Out of scope for the demo.
 5. Deploy: `DEBUG=False`, `ALLOWED_HOSTS`, secret key from env, Postgres, gunicorn + whitenoise.

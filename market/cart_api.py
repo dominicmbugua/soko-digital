@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
-from . import payments
+from . import payments, services
 from .api import ApiError, api_endpoint, as_int, json_body, need_role
 from .cart import Cart
 from .models import Checkout, Listing, Order, Payment
@@ -70,6 +70,7 @@ def cart_set(request):
 @require_POST
 def checkout_create(request):
     need_role(request, "buyer")
+    services.expire_unpaid_soon()
     data = json_body(request)
     phone = normalise_phone(str(data.get("phone", "")))
     address = str(data.get("address", "")).strip()

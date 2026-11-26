@@ -7,3 +7,5 @@ staticfiles/
 media/*
 !media/.gitkeep
 .env
+*.zip
+db.sqlite3

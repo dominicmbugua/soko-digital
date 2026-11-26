@@ -7,7 +7,9 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from . import payments
+from django.conf import settings
+
+from . import payments, services
 from .models import Checkout, ContactMessage, Listing, Order, Payment, Produce, Profile
 
 
@@ -182,7 +184,8 @@ class DashboardTests(Base):
         self.login("farmer1")
         r = self.client.get(reverse("farmer_dashboard"))
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context["paid_out"], 1840)
+        self.assertEqual(r.context["paid_out"], 0)        # settled, but we haven't sent the money yet
+        self.assertEqual(r.context["pending"], 1840)
         self.assertEqual(r.context["kg_sold"], 40)
         self.assertEqual(r.context["chart_total"], 1840)
 
@@ -696,3 +699,151 @@ class MpesaSimulatedTests(Base):
 
     def test_callback_url_is_closed_when_no_secret_is_configured(self):
         self.assertEqual(self.client.post("/api/mpesa/callback/anything/", "{}", content_type="application/json").status_code, 404)
+
+
+class PayoutTests(Base):
+    """Ops sends farmers their money by hand, then records the M-Pesa code."""
+
+    def setUp(self):
+        super().setUp()
+        User.objects.create_user("ops", password="pass12345", is_staff=True)
+        self.client.login(username="ops", password="pass12345")
+        self.o1 = self.settled(1840, 40)
+        self.o2 = self.settled(920, 20)
+
+    def settled(self, payout, qty):
+        return Order.objects.create(listing=self.listing, buyer=self.buyer, qty_kg=qty, phone="254712345678", status="SETTLED",
+                                    produce_value=50 * qty, delivery_fee=6 * qty, fee=50 * qty - payout, farmer_payout=payout)
+
+    def pay(self, ids=None, amount=2760, ref="UKPPH3K0GR", farmer=None):
+        ids = ids or [self.o1.id, self.o2.id]
+        return self.client.post(reverse("ops_payout", args=[(farmer or self.farmer).id]),
+                                {"orders": ",".join(map(str, ids)), "amount": amount, "reference": ref}, follow=True)
+
+    def test_ops_sees_what_each_farmer_is_owed(self):
+        r = self.client.get(reverse("ops_dashboard"))
+        self.assertEqual(r.context["owed"], 2760)
+        g = r.context["payouts"][0]
+        self.assertEqual((g["total"], g["phone"], len(g["orders"])), (2760, "0711111111", 2))
+        self.assertContains(r, "Mark paid")
+
+    def test_marking_paid_records_the_transfer(self):
+        r = self.pay(ref="ukpph 3k0gr")
+        self.assertContains(r, "KES 2,760 sent")
+        for o in (self.o1, self.o2):
+            o.refresh_from_db()
+            self.assertIsNotNone(o.paid_out_at)
+            self.assertEqual(o.payout_ref, "UKPPH3K0GR")
+        r = self.client.get(reverse("ops_dashboard"))
+        self.assertEqual((r.context["owed"], r.context["paid_out"], list(r.context["payouts"])), (0, 2760, []))
+        self.client.logout(); self.client.login(username="farmer1", password="pass12345")
+        f = self.client.get(reverse("farmer_dashboard"))
+        self.assertEqual((f.context["paid_out"], f.context["pending"]), (2760, 0))
+        self.assertContains(f, "UKPPH3K0GR")
+
+    def test_needs_a_real_looking_mpesa_code(self):
+        self.assertContains(self.pay(ref="oops"), "M-Pesa code of the transfer")
+        self.assertContains(self.pay(ref=""), "M-Pesa code of the transfer")
+        self.o1.refresh_from_db(); self.assertIsNone(self.o1.paid_out_at)
+
+    def test_refuses_if_the_list_changed_or_amount_is_wrong(self):
+        self.assertContains(self.pay(amount=1840), "list changed")             # you sent less than the page said
+        self.o1.refresh_from_db(); self.assertIsNone(self.o1.paid_out_at)
+        new = self.settled(500, 10)                                              # an order settles while the page is open
+        self.assertContains(self.pay(), "KES 2,760 sent")                        # the two orders ops actually paid are recorded
+        new.refresh_from_db(); self.assertIsNone(new.paid_out_at)                # the new one is still owed, never swept in silently
+        self.assertContains(self.pay(), "list changed")                          # and the same orders can't be paid out twice
+        self.assertEqual(Order.objects.filter(paid_out_at__isnull=False).count(), 2)
+
+    def test_cannot_pay_out_another_farmers_orders_or_unsettled_ones(self):
+        other = make_user("farmer2", "farmer")
+        self.assertContains(self.pay(farmer=other), "list changed")
+        held = Order.objects.create(listing=self.listing, buyer=self.buyer, qty_kg=5, phone="254712345678", status="PAYMENT_HELD",
+                                    produce_value=250, delivery_fee=30)
+        self.assertContains(self.pay(ids=[held.id], amount=0), "list changed")
+
+    def test_only_ops_can_record_payouts(self):
+        self.client.logout(); self.client.login(username="buyer1", password="pass12345")
+        self.assertEqual(self.client.post(reverse("ops_payout", args=[self.farmer.id]), {"orders": "1", "amount": 1, "reference": "ABCDEF12"}).status_code, 403)
+        self.o1.refresh_from_db(); self.assertIsNone(self.o1.paid_out_at)
+
+
+class ExpiryTests(Base):
+    """Unpaid orders stop holding the farmer's stock after SOKO_UNPAID_EXPIRY_MINUTES."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.login(username="buyer1", password="pass12345")
+        self.post("/api/cart/add/", {"listingId": self.listing.id, "qty": 40})
+        self.cid = self.post("/api/checkout/", {"phone": "0712345678", "address": "Kilimani, Nairobi"}).json()["id"]
+
+    def age(self, minutes):
+        Order.objects.update(created=timezone.now() - timedelta(minutes=minutes))
+
+    def statuses(self):
+        return {o.status for o in Order.objects.all()}
+
+    def test_stale_unpaid_order_is_cancelled_and_stock_returns(self):
+        self.listing.refresh_from_db(); self.assertEqual(self.listing.qty_kg, 60)
+        self.age(31)
+        self.assertEqual(services.expire_unpaid(), 1)
+        self.assertEqual(self.statuses(), {"CANCELLED"})
+        self.listing.refresh_from_db(); self.assertEqual(self.listing.qty_kg, 100)
+        self.assertEqual(services.expire_unpaid(), 0)                              # nothing left to do
+
+    def test_fresh_and_paid_orders_are_left_alone(self):
+        self.age(5)
+        self.assertEqual(services.expire_unpaid(), 0)
+        self.post(f"/api/checkout/{self.cid}/pay/")                                # demo mode: paid at once
+        self.age(500)
+        self.assertEqual(services.expire_unpaid(), 0)
+        self.assertEqual(self.statuses(), {"PAYMENT_HELD"})
+
+    def test_open_mpesa_prompt_protects_the_order_until_it_times_out(self):
+        c = Checkout.objects.get(pk=self.cid)
+        p = Payment.objects.create(checkout=c, phone=c.phone, amount=c.total, status="PENDING")
+        self.age(31)
+        self.assertEqual(services.expire_unpaid(), 0)                              # buyer may be typing their PIN right now
+        Payment.objects.filter(pk=p.pk).update(created=timezone.now() - timedelta(seconds=settings.MPESA_PROMPT_TIMEOUT + 5))
+        self.assertEqual(services.expire_unpaid(), 1)
+
+    def test_money_waiting_for_review_is_never_cancelled(self):
+        c = Checkout.objects.get(pk=self.cid)
+        Payment.objects.create(checkout=c, phone=c.phone, amount=c.total, status="NEEDS_REVIEW")
+        self.age(500)
+        self.assertEqual(services.expire_unpaid(), 0)
+
+    def test_single_orders_without_a_checkout_expire_too(self):
+        self.listing.refresh_from_db()
+        o = Order.objects.create(listing=self.listing, buyer=self.buyer, qty_kg=10, phone="254712345678",
+                                 produce_value=500, delivery_fee=60, status="AWAITING_PAYMENT")
+        Order.objects.filter(pk=o.pk).update(created=timezone.now() - timedelta(minutes=45))
+        self.assertEqual(services.expire_unpaid(), 1)
+
+    def test_late_payment_after_expiry_is_flagged_not_lost(self):
+        self.age(31); services.expire_unpaid()
+        c = Checkout.objects.get(pk=self.cid)
+        p = Payment.objects.create(checkout=c, phone=c.phone, amount=c.total, status="PENDING", checkout_request_id="ws_1")
+        payments.finish_payment(p.pk, result_code=0, receipt="LATE123456", amount=c.total)
+        p.refresh_from_db(); self.assertEqual(p.status, "NEEDS_REVIEW")
+
+    def test_expired_page_explains_and_hides_the_pay_form(self):
+        self.age(31); services.expire_unpaid()
+        r = self.client.get(reverse("checkout_done", args=[self.cid]))
+        self.assertContains(r, "no longer open")
+        self.assertNotContains(r, "retry-form")
+        self.assertEqual(self.post(f"/api/checkout/{self.cid}/pay/").status_code, 409)
+
+    def test_busy_pages_trigger_expiry_without_a_scheduler(self):
+        self.age(31)
+        services._last_expiry = None
+        self.client.get("/api/listings/")
+        self.assertEqual(self.statuses(), {"CANCELLED"})
+
+    def test_management_command(self):
+        from io import StringIO
+        from django.core.management import call_command
+        self.age(31)
+        out = StringIO(); call_command("expire_unpaid", stdout=out)
+        self.assertIn("Cancelled 1 unpaid order", out.getvalue())
+

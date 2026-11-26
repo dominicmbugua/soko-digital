@@ -11,7 +11,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods, require_POST
 
-from . import payments
+from . import payments, services
 from .models import Listing, Order, Produce
 from .utils import fee_for, normalise_phone, role_of
 
@@ -86,6 +86,7 @@ def order_json(o):
 @require_http_methods(["GET", "POST"])
 def listings(request):
     if request.method == "GET":
+        services.expire_unpaid_soon()
         qs = Listing.objects.filter(is_active=True).select_related("produce", "farmer")[:200]
         return JsonResponse([listing_json(l) for l in qs], safe=False)
 
